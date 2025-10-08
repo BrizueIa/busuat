@@ -29,7 +29,7 @@ class StudentLoginPage extends GetView<StudentLoginController> {
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: Colors.orange,
                 ),
               ),
               const SizedBox(height: 10),
@@ -54,7 +54,10 @@ class StudentLoginPage extends GetView<StudentLoginController> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.blue, width: 2),
+                    borderSide: const BorderSide(
+                      color: Colors.orange,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -85,7 +88,7 @@ class StudentLoginPage extends GetView<StudentLoginController> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: Colors.blue,
+                        color: Colors.orange,
                         width: 2,
                       ),
                     ),
@@ -103,7 +106,7 @@ class StudentLoginPage extends GetView<StudentLoginController> {
                         ? null
                         : controller.login,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -147,7 +150,7 @@ class StudentLoginPage extends GetView<StudentLoginController> {
                       child: const Text(
                         'Regístrate',
                         style: TextStyle(
-                          color: Colors.blue,
+                          color: Colors.orange,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

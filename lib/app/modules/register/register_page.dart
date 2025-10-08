@@ -29,7 +29,7 @@ class RegisterPage extends GetView<RegisterController> {
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: Colors.orange,
                 ),
               ),
               const SizedBox(height: 10),
@@ -38,12 +38,37 @@ class RegisterPage extends GetView<RegisterController> {
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 40),
+              // Name Field
+              TextField(
+                controller: controller.nameController,
+                keyboardType: TextInputType.name,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: 'Nombre completo',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Colors.orange,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               // Email Field
               TextField(
                 controller: controller.emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'Correo electrónico',
+                  labelText: 'Correo institucional (@uat.edu.mx)',
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -54,7 +79,10 @@ class RegisterPage extends GetView<RegisterController> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.blue, width: 2),
+                    borderSide: const BorderSide(
+                      color: Colors.orange,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -85,7 +113,7 @@ class RegisterPage extends GetView<RegisterController> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: Colors.blue,
+                        color: Colors.orange,
                         width: 2,
                       ),
                     ),
@@ -119,7 +147,7 @@ class RegisterPage extends GetView<RegisterController> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: Colors.blue,
+                        color: Colors.orange,
                         width: 2,
                       ),
                     ),
@@ -137,7 +165,7 @@ class RegisterPage extends GetView<RegisterController> {
                         ? null
                         : controller.register,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -181,7 +209,7 @@ class RegisterPage extends GetView<RegisterController> {
                       child: const Text(
                         'Inicia Sesión',
                         style: TextStyle(
-                          color: Colors.blue,
+                          color: Colors.orange,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

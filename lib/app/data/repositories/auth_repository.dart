@@ -20,8 +20,12 @@ class AuthRepository {
     return null;
   }
 
-  // Registrar nuevo estudiante
-  Future<bool> registerStudent(String email, String password) async {
+  // Registrar nuevo estudiante (almacenamiento local)
+  Future<bool> registerStudent(
+    String email,
+    String password, {
+    String? name,
+  }) async {
     try {
       // Obtener lista de usuarios registrados
       List users = _storage.read(_usersKey) ?? [];
@@ -37,6 +41,7 @@ class AuthRepository {
         'id': DateTime.now().millisecondsSinceEpoch.toString(),
         'email': email,
         'password': password,
+        'name': name,
         'userType': 'student',
       };
 
@@ -47,6 +52,7 @@ class AuthRepository {
       final userModel = UserModel(
         id: newUser['id'] as String,
         email: email,
+        name: name,
         userType: 'student',
       );
       await saveCurrentUser(userModel);
@@ -71,6 +77,7 @@ class AuthRepository {
         final userModel = UserModel(
           id: user['id'] as String,
           email: email,
+          name: user['name'],
           userType: 'student',
         );
         await saveCurrentUser(userModel);

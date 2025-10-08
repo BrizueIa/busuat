@@ -24,15 +24,20 @@ class AuthOptionsPage extends GetView<AuthOptionsController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
-              // Icono de estudiante
+              // Logo de la app
               Container(
                 height: 150,
                 width: 150,
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.school, size: 80, color: Colors.blue),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
               const SizedBox(height: 30),
               const Text(
@@ -40,7 +45,7 @@ class AuthOptionsPage extends GetView<AuthOptionsController> {
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: Colors.orange,
                 ),
               ),
               const SizedBox(height: 10),
@@ -56,7 +61,7 @@ class AuthOptionsPage extends GetView<AuthOptionsController> {
                 child: ElevatedButton(
                   onPressed: controller.goToLogin,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -76,8 +81,8 @@ class AuthOptionsPage extends GetView<AuthOptionsController> {
                 child: OutlinedButton(
                   onPressed: controller.goToRegister,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue,
-                    side: const BorderSide(color: Colors.blue, width: 2),
+                    foregroundColor: Colors.orange,
+                    side: const BorderSide(color: Colors.orange, width: 2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

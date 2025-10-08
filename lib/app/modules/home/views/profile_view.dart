@@ -12,7 +12,7 @@ class ProfileView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Perfil'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -54,10 +54,14 @@ class ProfileView extends StatelessWidget {
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
+                    color: Colors.orange.shade100,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.person, size: 80, color: Colors.blue),
+                  child: const Icon(
+                    Icons.person,
+                    size: 80,
+                    color: Colors.orange,
+                  ),
                 ),
                 const SizedBox(height: 30),
                 const Text(
@@ -65,7 +69,7 @@ class ProfileView extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: Colors.orange,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -119,7 +123,7 @@ class ProfileView extends StatelessWidget {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: Colors.blue),
+        Icon(icon, color: Colors.orange),
         const SizedBox(width: 16),
         Expanded(
           child: Column(

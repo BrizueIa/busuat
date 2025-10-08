@@ -19,7 +19,7 @@ class HomePage extends GetView<HomeController> {
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: controller.currentIndex.value,
           onTap: controller.changeTab,
-          selectedItemColor: Colors.blue,
+          selectedItemColor: Colors.orange,
           unselectedItemColor: Colors.grey,
           items: const [
             BottomNavigationBarItem(
