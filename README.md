@@ -16,6 +16,7 @@ Aplicación Flutter con sistema de autenticación usando GetX siguiendo el patr�
 - **[TESTING.md](TESTING.md)** - 🧪 Guía de pruebas
 - **[COMMANDS.md](COMMANDS.md)** - 🚀 Comandos útiles
 - **[CHANGELOG.md](CHANGELOG.md)** - 📝 Historial de cambios
+- **[CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md)** - 🌐 Guía de deployment
 
 ---
 
@@ -235,5 +236,33 @@ flutter run
 - GetX (State Management)
 - GetStorage (Local Persistence)
 - Material Design 3
+
+## 🌐 Deployment
+
+### Cloudflare Pages
+
+La aplicación está configurada para desplegarse automáticamente en Cloudflare Pages.
+
+**Build Output**: `build/web`
+
+#### Despliegue rápido:
+
+```bash
+# Opción 1: Usar script automatizado
+./deploy_web.sh
+
+# Opción 2: Manual
+flutter build web --release
+git add build/web
+git commit -m "Update web build"
+git push
+```
+
+Ver **[CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md)** para más detalles.
+
+### Configuración en Cloudflare Pages:
+- **Build command**: `flutter build web --release`
+- **Build output directory**: `build/web`
+- **Framework preset**: None
 
 # busuat

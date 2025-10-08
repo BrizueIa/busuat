@@ -31,6 +31,8 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+# Except build/web for Cloudflare Pages deployment
+!/build/web/
 /coverage/
 
 # Symbolication related
