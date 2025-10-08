@@ -21,10 +21,15 @@ class LoginPage extends GetView<LoginController> {
                 height: 150,
                 width: 150,
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.school, size: 80, color: Colors.blue),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
               const Text(
@@ -32,7 +37,7 @@ class LoginPage extends GetView<LoginController> {
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: Colors.orange,
                 ),
               ),
               const SizedBox(height: 10),
@@ -68,7 +73,7 @@ class LoginPage extends GetView<LoginController> {
                 child: ElevatedButton(
                   onPressed: controller.goToAuthOptions,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

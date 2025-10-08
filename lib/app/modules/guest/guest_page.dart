@@ -10,7 +10,7 @@ class GuestPage extends GetView<GuestController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Modo Invitado'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -43,14 +43,14 @@ class GuestPage extends GetView<GuestController> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.map_outlined, size: 100, color: Colors.blue.shade200),
+            Icon(Icons.map_outlined, size: 100, color: Colors.orange.shade200),
             const SizedBox(height: 20),
             const Text(
               'Mapa',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: Colors.orange,
               ),
             ),
             const SizedBox(height: 10),

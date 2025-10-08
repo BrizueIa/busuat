@@ -8,21 +8,25 @@ class MarketplaceView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Marketplace'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.store_outlined, size: 100, color: Colors.blue.shade200),
+            Icon(
+              Icons.store_outlined,
+              size: 100,
+              color: Colors.orange.shade200,
+            ),
             const SizedBox(height: 20),
             const Text(
               'Marketplace',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: Colors.orange,
               ),
             ),
             const SizedBox(height: 10),
