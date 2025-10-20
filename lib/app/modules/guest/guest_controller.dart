@@ -27,15 +27,15 @@ class GuestController extends GetxController {
         actions: [
           TextButton(
             onPressed: () {
-              Get.back();
-              Get.offAllNamed('/student-login');
+              Get.back(); // Cierra el diálogo
+              Get.toNamed('/student-login'); // Navega sin eliminar la pila
             },
             child: const Text('Iniciar Sesión'),
           ),
           ElevatedButton(
             onPressed: () {
-              Get.back();
-              Get.offAllNamed('/register');
+              Get.back(); // Cierra el diálogo
+              Get.toNamed('/register'); // Navega sin eliminar la pila
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,

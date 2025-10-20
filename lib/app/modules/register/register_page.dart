@@ -68,7 +68,7 @@ class RegisterPage extends GetView<RegisterController> {
                 controller: controller.emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'Correo institucional (@uat.edu.mx)',
+                  labelText: 'Correo institucional ( .uat.edu.mx)',
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
