@@ -69,14 +69,29 @@ class RegisterController extends GetxController {
     }
 
     // Validación de email institucional UAT
-    if (!email.contains('.uat.edu.mx')) {
+    if (!email.toLowerCase().endsWith('.uat.edu.mx')) {
       Get.snackbar(
-        'Error',
-        'Debes usar un correo institucional (@uat.edu.mx)',
+        'Error de Validación',
+        'Debes usar un correo institucional válido de la UAT que termine en .uat.edu.mx\n\nEjemplo: tu.nombre@uat.edu.mx',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade400,
         colorText: Colors.white,
-        duration: const Duration(seconds: 4),
+        duration: const Duration(seconds: 5),
+      );
+      return;
+    }
+
+    // Validación adicional: verificar formato correcto
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+\.uat\.edu\.mx$');
+    final emailParts = email.split('@');
+    if (emailParts.length != 2 || !emailRegex.hasMatch(emailParts[1])) {
+      Get.snackbar(
+        'Error de Formato',
+        'El formato del correo no es válido. Debe ser: usuario@subdominio.uat.edu.mx',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade400,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
       );
       return;
     }
