@@ -282,34 +282,4 @@ class GuestProfileView extends StatelessWidget {
       ],
     );
   }
-
-  Widget _buildFeatureRow(IconData icon, String feature, bool isAvailable) {
-    return Row(
-      children: [
-        Icon(
-          isAvailable ? Icons.check_circle : Icons.cancel,
-          color: isAvailable ? Colors.green.shade400 : Colors.red.shade400,
-          size: 24,
-        ),
-        const SizedBox(width: 16),
-        Icon(
-          icon,
-          color: isAvailable ? Colors.grey.shade700 : Colors.grey.shade400,
-          size: 22,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            feature,
-            style: TextStyle(
-              fontSize: 16,
-              color: isAvailable ? Colors.grey.shade800 : Colors.grey.shade500,
-              fontWeight: FontWeight.w500,
-              decoration: isAvailable ? null : TextDecoration.lineThrough,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
