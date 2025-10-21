@@ -123,32 +123,10 @@ class RegisterController extends GetxController {
     isLoading.value = true;
 
     try {
-      // TODO: TEMPORALMENTE DESACTIVADO - Activar cuando Supabase esté configurado
-      // 1. Registrar en la API de Supabase
-      /* 
-      final apiResponse = await _apiService.registerUser(
-        email: email,
-        name: name,
-        password: password,
-      );
+      print('📝 Iniciando registro - Email: $email, Nombre: $name');
 
-      if (apiResponse == null) {
-        isLoading.value = false;
-        Get.snackbar(
-          'Error',
-          'No se pudo conectar con el servidor. Intenta nuevamente.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.shade400,
-          colorText: Colors.white,
-        );
-        return;
-      }
-      */
-
-      print('📝 Registro local - Email: $email, Nombre: $name');
-
-      // 2. Guardar localmente para mantener el sistema de permisos
-      final localSuccess = await _authRepository.registerStudent(
+      // Registrar en Supabase
+      final result = await _authRepository.registerStudent(
         email,
         password,
         name: name,
@@ -156,33 +134,76 @@ class RegisterController extends GetxController {
 
       isLoading.value = false;
 
-      if (localSuccess) {
+      if (result['success'] == true) {
         Get.snackbar(
           'Éxito',
           'Registro completado exitosamente',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green.shade400,
           colorText: Colors.white,
+          duration: const Duration(seconds: 3),
         );
         Get.offAllNamed('/home');
       } else {
+        // Manejar diferentes tipos de error
+        final errorType = result['error'] ?? 'UNKNOWN_ERROR';
+        final errorMessage = result['message'] ?? 'Error desconocido';
+
+        String title = 'Error de Registro';
+        String message = errorMessage;
+        Duration duration = const Duration(seconds: 4);
+
+        // Personalizar mensaje según el tipo de error
+        if (errorType == 'FUNCTION_NOT_FOUND') {
+          title = '⚠️ Servicio No Disponible';
+          message =
+              'La función de registro no está desplegada en Supabase.\n\n'
+              'Por favor:\n'
+              '1. Verifica que la edge function "register-user" esté desplegada\n'
+              '2. Revisa los logs de Supabase\n'
+              '3. Consulta QUICKSTART_SUPABASE.md para instrucciones';
+          duration = const Duration(seconds: 8);
+        } else if (errorType == 'NETWORK_ERROR') {
+          title = '🌐 Error de Conexión';
+          message =
+              'No se pudo conectar al servidor.\n\nVerifica tu conexión a internet.';
+          duration = const Duration(seconds: 5);
+        } else if (errorType == 'FUNCTION_ERROR') {
+          title = '⚙️ Error del Servidor';
+          message =
+              'La función de registro tiene un error.\n\n'
+              'Verifica que la edge function esté correctamente desplegada.';
+          duration = const Duration(seconds: 6);
+        }
+
         Get.snackbar(
-          'Error',
-          'El correo ya está registrado localmente',
+          title,
+          message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.shade400,
           colorText: Colors.white,
+          duration: duration,
+          margin: const EdgeInsets.all(16),
         );
+
+        // Imprimir detalles técnicos en consola
+        print('❌ Tipo de error: $errorType');
+        print('❌ Mensaje: $errorMessage');
+        if (result['details'] != null) {
+          print('❌ Detalles técnicos: ${result['details']}');
+        }
       }
     } catch (e) {
       isLoading.value = false;
       Get.snackbar(
-        'Error',
-        'Ocurrió un error inesperado: $e',
+        'Error Inesperado',
+        'Ocurrió un error inesperado: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade400,
         colorText: Colors.white,
+        duration: const Duration(seconds: 5),
       );
+      print('❌ Error inesperado en RegisterController: $e');
     }
   }
 
