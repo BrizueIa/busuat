@@ -12,6 +12,8 @@ import '../modules/guest/guest_binding.dart';
 import '../modules/guest/guest_page.dart';
 import '../modules/home/home_binding.dart';
 import '../modules/home/home_page.dart';
+import '../modules/map/map_binding.dart';
+import '../modules/map/map_page.dart';
 
 part 'app_routes.dart';
 
@@ -53,6 +55,11 @@ class AppPages {
       page: () => const HomePage(),
       binding: HomeBinding(),
       middlewares: [StudentMiddleware()],
+    ),
+    GetPage(
+      name: Routes.MAP,
+      page: () => const MapPage(),
+      binding: MapBinding(),
     ),
   ];
 }
