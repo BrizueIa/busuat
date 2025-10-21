@@ -56,8 +56,7 @@ echo "   KEY: ${SUPABASE_ANON_KEY:0:20}..." # Mostrar solo los primeros 20 chars
 flutter build web \
   --dart-define=SUPABASE_URL="$SUPABASE_URL" \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-  --release \
-  --web-renderer canvaskit
+  --release
 
 # Verificar que build/web existe
 echo ""
