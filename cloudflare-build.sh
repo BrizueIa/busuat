@@ -16,6 +16,16 @@ if [ -z "$SUPABASE_ANON_KEY" ]; then
 fi
 echo "✅ Variables de entorno configuradas"
 
+# Crear .env temporal (para que Flutter no falle, aunque no se usa)
+echo ""
+echo "📝 Creando archivo .env temporal..."
+cat > .env << EOF
+# Este archivo es temporal para compilación en Cloudflare
+# Las variables reales se pasan via --dart-define
+SUPABASE_URL=placeholder
+SUPABASE_ANON_KEY=placeholder
+EOF
+
 # Usar versión de Flutter específica si está definida
 FLUTTER_BRANCH="${FLUTTER_VERSION:-stable}"
 echo "📌 Versión de Flutter a usar: $FLUTTER_BRANCH"
