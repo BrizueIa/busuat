@@ -68,7 +68,7 @@ class RegisterPage extends GetView<RegisterController> {
                 controller: controller.emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'Correo institucional (@uat.edu.mx)',
+                  labelText: 'Correo institucional ( .uat.edu.mx)',
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -218,6 +218,83 @@ class RegisterPage extends GetView<RegisterController> {
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
+              // Support Contact Information
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.blue.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Información Importante',
+                          style: TextStyle(
+                            color: Colors.blue.shade900,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Por el momento, la contraseña será establecida directamente en la aplicación sin verificación por correo.',
+                      style: TextStyle(
+                        color: Colors.blue.shade900,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.email_outlined,
+                          color: Colors.blue.shade700,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                color: Colors.blue.shade900,
+                                fontSize: 14,
+                              ),
+                              children: const [
+                                TextSpan(
+                                  text:
+                                      'Para cualquier aclaración, contacta a soporte: ',
+                                ),
+                                TextSpan(
+                                  text: 'ejemplo@ejemplo.com',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
