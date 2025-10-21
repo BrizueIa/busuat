@@ -32,9 +32,6 @@ class AuthRepository {
       print('📤 Iniciando registro en Supabase...');
       print('Email: $email');
       print('Nombre: $name');
-      print(
-        'URL: https://tzvyirisalzyaapkbwyw.supabase.co/functions/v1/register-user',
-      );
 
       // Llamar a la edge function de Supabase
       final response = await _supabase.functions.invoke(
