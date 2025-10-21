@@ -80,13 +80,15 @@ class MapPage extends GetView<MapController> {
               child: Column(
                 children: [
                   // Botón para mostrar/ocultar marcadores fijos
-                  _BuildControlButton(
-                    icon: controller.showFixedMarkers.value
-                        ? Icons.location_on
-                        : Icons.location_off,
-                    label: 'Marcadores',
-                    isActive: controller.showFixedMarkers.value,
-                    onPressed: controller.toggleFixedMarkers,
+                  Obx(
+                    () => _BuildControlButton(
+                      icon: controller.showFixedMarkers.value
+                          ? Icons.location_on
+                          : Icons.location_off,
+                      label: 'Marcadores',
+                      isActive: controller.showFixedMarkers.value,
+                      onPressed: controller.toggleFixedMarkers,
+                    ),
                   ),
                   // Botón "Mi ubicación" eliminado - Google Maps muestra el punto azul automáticamente
                 ],
@@ -99,9 +101,11 @@ class MapPage extends GetView<MapController> {
               left: 0,
               right: 0,
               child: Center(
-                child: _BuildInBusButton(
-                  isInBus: controller.isInBus.value,
-                  onPressed: controller.toggleInBus,
+                child: Obx(
+                  () => _BuildInBusButton(
+                    isInBus: controller.isInBus.value,
+                    onPressed: controller.toggleInBus,
+                  ),
                 ),
               ),
             ),

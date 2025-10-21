@@ -27,8 +27,8 @@ class GuestMapView extends StatelessWidget {
             () => IconButton(
               icon: Icon(
                 mapController.showFixedMarkers.value
-                    ? Icons.visibility
-                    : Icons.visibility_off,
+                    ? Icons.location_on
+                    : Icons.location_off,
               ),
               tooltip: mapController.showFixedMarkers.value
                   ? 'Ocultar marcadores'
