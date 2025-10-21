@@ -9,8 +9,12 @@ import 'app/routes/app_pages.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Cargar variables de entorno
-  await dotenv.load(fileName: ".env");
+  // Cargar variables de entorno (solo si existe .env)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('ℹ️ No se encontró .env, usando dart-define o variables del sistema');
+  }
 
   await GetStorage.init();
 
