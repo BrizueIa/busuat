@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex  # -x muestra cada comando que se ejecuta
+set -ex
 
 echo "🚀 Iniciando build de Flutter para Cloudflare Pages"
 echo "=================================================="
@@ -16,11 +16,15 @@ if [ -z "$SUPABASE_ANON_KEY" ]; then
 fi
 echo "✅ Variables de entorno configuradas"
 
+# Usar versión de Flutter específica si está definida
+FLUTTER_BRANCH="${FLUTTER_VERSION:-stable}"
+echo "📌 Versión de Flutter a usar: $FLUTTER_BRANCH"
+
 # Instalar Flutter
 echo ""
 echo "📦 Descargando Flutter SDK..."
 if [ ! -d "flutter" ]; then
-    git clone https://github.com/flutter/flutter.git -b stable --depth 1
+    git clone https://github.com/flutter/flutter.git -b "$FLUTTER_BRANCH" --depth 1
 else
     echo "Flutter ya está descargado, saltando..."
 fi
@@ -51,7 +55,7 @@ flutter pub get
 echo ""
 echo "🔨 Compilando Flutter Web..."
 echo "   URL: $SUPABASE_URL"
-echo "   KEY: ${SUPABASE_ANON_KEY:0:20}..." # Mostrar solo los primeros 20 chars
+echo "   KEY: ${SUPABASE_ANON_KEY:0:20}..."
 
 flutter build web \
   --dart-define=SUPABASE_URL="$SUPABASE_URL" \
