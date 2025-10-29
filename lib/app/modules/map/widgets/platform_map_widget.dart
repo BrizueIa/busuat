@@ -18,6 +18,10 @@ class PlatformMapWidget extends StatelessWidget {
     return Obx(
       () => GoogleMap(
         onMapCreated: mapController.onMapCreated,
+        onCameraIdle: () {
+          // Cuando la cámara deja de moverse, verificar y corregir bearing
+          mapController.ensureCorrectBearing();
+        },
         initialCameraPosition: const CameraPosition(
           target: MapController.CENTRAL_POINT,
           zoom: MapController.DEFAULT_ZOOM,
@@ -28,8 +32,8 @@ class PlatformMapWidget extends StatelessWidget {
         markers: mapController.markers.toSet(),
         mapType: MapType.normal,
 
-        // Restricciones de cámara
-        minMaxZoomPreference: const MinMaxZoomPreference(16, 17),
+        // Restricciones de cámara - Ajustado para permitir ver toda la facultad
+        minMaxZoomPreference: const MinMaxZoomPreference(15.5, 17.5),
         cameraTargetBounds: CameraTargetBounds(
           LatLngBounds(
             southwest: const LatLng(22.2745, -97.8660),

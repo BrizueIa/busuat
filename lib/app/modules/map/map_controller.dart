@@ -14,7 +14,7 @@ enum MarkerType { facultades, paradas, accesos, ninguno }
 
 class MapController extends GetxController {
   static const CENTRAL_POINT = LatLng(22.277125, -97.862299);
-  static const double DEFAULT_ZOOM = 16.9;
+  static const double DEFAULT_ZOOM = 16.4; // Reducido para ver toda la facultad
   static const double BEARING = 270.0;
 
   // Estilo personalizado del mapa
@@ -124,6 +124,9 @@ class MapController extends GetxController {
   StreamSubscription? _locationSubscription;
   // StreamSubscription? _busLocationSubscription;
 
+  // Timer para mantener el bearing correcto
+  Timer? _bearingEnforcer;
+
   @override
   void onInit() {
     super.onInit();
@@ -201,6 +204,21 @@ class MapController extends GetxController {
       );
       _customIcons['FMT'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FMT.png',
+        33,
+        50,
+      );
+      _customIcons['FADYCS'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FADYCS.png',
+        33,
+        50,
+      );
+      _customIcons['FADU'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FADU.png',
+        33,
+        50,
+      );
+      _customIcons['FCAT'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FCAT.png',
         33,
         50,
       );
@@ -382,7 +400,7 @@ class MapController extends GetxController {
               _customIcons[iconKey] ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
         } else if (selectedMarkerType.value == MarkerType.paradas) {
-          title = 'Parada de Autobús';
+          title = value['name'] as String? ?? 'Parada de Autobús';
           snippet = key;
           // Usar ícono de parada personalizado
           final stopLogo = value['stop_logo'] as String?;
@@ -663,8 +681,21 @@ class MapController extends GetxController {
     // Aplicar estilo personalizado al mapa
     controller.setMapStyle(mapStyle);
 
-    // Forzar la posición inicial con bearing de manera más agresiva
+    // Forzar la posición inicial con bearing de manera MUY agresiva
     _applyInitialCameraPosition(controller);
+
+    // Aplicar bearing adicional después de un delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mapController != null) {
+        _forceCorrectBearing();
+      }
+    });
+
+    // Timer que verifica y corrige el bearing cada 2 segundos
+    _bearingEnforcer?.cancel();
+    _bearingEnforcer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      ensureCorrectBearing();
+    });
   }
 
   void _applyInitialCameraPosition(GoogleMapController controller) {
@@ -675,12 +706,14 @@ class MapController extends GetxController {
       tilt: 0,
     );
 
-    // Aplicación inmediata sin animación
+    // Aplicación inmediata sin animación - múltiples veces
+    controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
+    controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
     controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
 
     // Aplicaciones adicionales con delays incrementales
-    for (int i = 1; i <= 5; i++) {
-      Future.delayed(Duration(milliseconds: i * 300), () {
+    for (int i = 1; i <= 10; i++) {
+      Future.delayed(Duration(milliseconds: i * 200), () {
         if (mapController != null) {
           controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
         }
@@ -688,13 +721,63 @@ class MapController extends GetxController {
     }
   }
 
+  // Método para forzar el bearing correcto
+  void _forceCorrectBearing() async {
+    if (mapController == null) return;
+
+    try {
+      final controller = await mapControllerCompleter.future;
+      const targetPosition = CameraPosition(
+        target: CENTRAL_POINT,
+        zoom: DEFAULT_ZOOM,
+        bearing: BEARING,
+        tilt: 0,
+      );
+
+      // Aplicar múltiples veces para asegurar
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(targetPosition),
+      );
+      await Future.delayed(const Duration(milliseconds: 100));
+      await controller.moveCamera(
+        CameraUpdate.newCameraPosition(targetPosition),
+      );
+    } catch (e) {
+      print('Error forzando bearing: $e');
+    }
+  }
+
+  // Método público para asegurar que el bearing sea correcto
+  void ensureCorrectBearing() async {
+    if (mapController == null) return;
+
+    try {
+      final controller = await mapControllerCompleter.future;
+
+      // Siempre re-aplicar el bearing correcto cuando la cámara deja de moverse
+      const targetPosition = CameraPosition(
+        target: CENTRAL_POINT,
+        zoom: DEFAULT_ZOOM,
+        bearing: BEARING,
+        tilt: 0,
+      );
+
+      controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
+    } catch (e) {
+      print('Error asegurando bearing: $e');
+    }
+  }
+
   @override
   void onClose() {
     _locationSubscription?.cancel();
+    _bearingEnforcer?.cancel();
     // TODO: Descomentar cuando se implemente Supabase
     // _busLocationSubscription?.cancel();
     // _busTrackingService.dispose();
-    mapController?.dispose();
+
+    // No es necesario hacer dispose del mapController
+    // GoogleMapController se limpia automáticamente cuando el widget se destruye
     super.onClose();
   }
 }
