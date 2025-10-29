@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../map/map_controller.dart';
 import '../../map/map_binding.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../map/widgets/platform_map_widget.dart';
+import '../../map/widgets/marker_type_dropdown.dart';
 
 class GuestMapView extends StatelessWidget {
   const GuestMapView({super.key});
@@ -21,61 +22,21 @@ class GuestMapView extends StatelessWidget {
         title: const Text('Mapa del Campus'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
-        actions: [
-          // Botón para mostrar/ocultar marcadores
-          Obx(
-            () => IconButton(
-              icon: Icon(
-                mapController.showFixedMarkers.value
-                    ? Icons.location_on
-                    : Icons.location_off,
-              ),
-              tooltip: mapController.showFixedMarkers.value
-                  ? 'Ocultar marcadores'
-                  : 'Mostrar marcadores',
-              onPressed: mapController.toggleFixedMarkers,
-            ),
-          ),
-        ],
       ),
       body: Stack(
         children: [
           // Mapa
-          Obx(
-            () => GoogleMap(
-              onMapCreated: mapController.onMapCreated,
-              initialCameraPosition: const CameraPosition(
-                target: MapController.CENTRAL_POINT,
-                zoom: MapController.DEFAULT_ZOOM,
-                bearing: MapController.BEARING,
+          PlatformMapWidget(mapController: mapController),
+
+          // Dropdown de marcadores - posicionado en la esquina superior derecha
+          Positioned(
+            top: 16,
+            right: 16,
+            child: Obx(
+              () => MarkerTypeDropdown(
+                selectedType: mapController.selectedMarkerType.value,
+                onChanged: mapController.changeMarkerType,
               ),
-              markers: mapController.markers.toSet(),
-              mapType: MapType.normal,
-
-              // Restricciones de cámara
-              minMaxZoomPreference: const MinMaxZoomPreference(16, 17),
-              cameraTargetBounds: CameraTargetBounds(
-                LatLngBounds(
-                  southwest: const LatLng(22.2745, -97.8660),
-                  northeast: const LatLng(22.2800, -97.8590),
-                ),
-              ),
-
-              // Deshabilitar gestos
-              zoomGesturesEnabled: false,
-              scrollGesturesEnabled: false,
-              tiltGesturesEnabled: false,
-              rotateGesturesEnabled: false,
-
-              // Controles UI
-              myLocationEnabled: true,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              mapToolbarEnabled: false,
-              compassEnabled: false,
-              indoorViewEnabled: false,
-              trafficEnabled: false,
-              buildingsEnabled: true,
             ),
           ),
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'map_controller.dart';
+import 'widgets/marker_type_dropdown.dart';
 
 class MapPage extends GetView<MapController> {
   const MapPage({super.key});
@@ -79,18 +80,13 @@ class MapPage extends GetView<MapController> {
               right: 16,
               child: Column(
                 children: [
-                  // Botón para mostrar/ocultar marcadores fijos
+                  // Dropdown para seleccionar tipo de marcadores
                   Obx(
-                    () => _BuildControlButton(
-                      icon: controller.showFixedMarkers.value
-                          ? Icons.location_on
-                          : Icons.location_off,
-                      label: 'Marcadores',
-                      isActive: controller.showFixedMarkers.value,
-                      onPressed: controller.toggleFixedMarkers,
+                    () => MarkerTypeDropdown(
+                      selectedType: controller.selectedMarkerType.value,
+                      onChanged: controller.changeMarkerType,
                     ),
                   ),
-                  // Botón "Mi ubicación" eliminado - Google Maps muestra el punto azul automáticamente
                 ],
               ),
             ),
@@ -136,58 +132,6 @@ class MapPage extends GetView<MapController> {
           ],
         );
       }),
-    );
-  }
-}
-
-class _BuildControlButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onPressed;
-
-  const _BuildControlButton({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      elevation: 4,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isActive ? Colors.blue : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                color: isActive ? Colors.white : Colors.black87,
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isActive ? Colors.white : Colors.black87,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

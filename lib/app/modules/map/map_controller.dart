@@ -1,10 +1,16 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/services/location_service.dart';
 import '../../data/models/point_of_interest.dart';
 import '../../data/models/poi_type.dart';
+import 'constants/map_markers_consts.dart';
+
+// Enum para los tipos de marcadores
+enum MarkerType { facultades, paradas, accesos, ninguno }
 
 class MapController extends GetxController {
   static const CENTRAL_POINT = LatLng(22.277125, -97.862299);
@@ -99,6 +105,7 @@ class MapController extends GetxController {
   // Observable states
   final RxBool isLoading = true.obs;
   final RxBool showFixedMarkers = true.obs;
+  final Rx<MarkerType> selectedMarkerType = MarkerType.ninguno.obs;
   // final RxBool showMyLocation = false.obs; // No necesario, Google Maps muestra el punto azul automáticamente
   final RxBool isInBus = false.obs;
   final RxBool hasLocationPermission = false.obs;
@@ -109,6 +116,9 @@ class MapController extends GetxController {
   // Markers
   final markers = <Marker>{}.obs;
   final RxList<PointOfInterest> pointsOfInterest = <PointOfInterest>[].obs;
+
+  // Cache de íconos personalizados
+  final Map<String, BitmapDescriptor> _customIcons = {};
 
   // Streams
   StreamSubscription? _locationSubscription;
@@ -125,6 +135,9 @@ class MapController extends GetxController {
 
     // Verifica permisos
     await _checkLocationPermission();
+
+    // Carga íconos personalizados
+    await _loadCustomIcons();
 
     // Carga puntos de interés (estáticos por ahora)
     await _loadPointsOfInterest();
@@ -146,6 +159,113 @@ class MapController extends GetxController {
       final granted = await _locationService.requestPermissions();
       hasLocationPermission.value = granted;
     }
+  }
+
+  Future<void> _loadCustomIcons() async {
+    try {
+      // Cargar íconos de facultades (33x50 px - rectangulares)
+      _customIcons['FET'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FET.png',
+        33,
+        50,
+      );
+      _customIcons['FMA'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FMA.png',
+        33,
+        50,
+      );
+      _customIcons['FIT'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FIT.png',
+        33,
+        50,
+      );
+      _customIcons['FADYCS'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FADYCS.png',
+        33,
+        50,
+      );
+      _customIcons['FADU'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FADU.png',
+        33,
+        50,
+      );
+      _customIcons['FCAT'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FCAT.png',
+        33,
+        50,
+      );
+      _customIcons['FO'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FO.png',
+        33,
+        50,
+      );
+      _customIcons['FMT'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FMT.png',
+        33,
+        50,
+      );
+
+      // Cargar íconos de paradas (33x50 px - rectangulares)
+      _customIcons['BusStop_cuted'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/BusStop_cuted.png',
+        33,
+        50,
+      );
+      _customIcons['Entrada_cuted'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/Entrada_cuted.png',
+        33,
+        50,
+      );
+      _customIcons['FIT_cuted'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/FIT_cuted.png',
+        33,
+        50,
+      );
+      _customIcons['Colera'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/Colera.png',
+        33,
+        50,
+      );
+      _customIcons['GYM'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/GYM.png',
+        33,
+        50,
+      );
+
+      // Cargar íconos de accesos (33x50 px - rectangulares)
+      _customIcons['Peatones'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/Peatones.png',
+        33,
+        50,
+      );
+      _customIcons['Carros_cuted'] = await _getBitmapDescriptorFromAsset(
+        'assets/markers/Carros_cuted.png',
+        33,
+        50,
+      );
+    } catch (e) {
+      print('Error cargando íconos personalizados: $e');
+      // Si falla, los marcadores usarán los íconos por defecto
+    }
+  }
+
+  Future<BitmapDescriptor> _getBitmapDescriptorFromAsset(
+    String assetPath,
+    int width,
+    int height,
+  ) async {
+    final ByteData data = await rootBundle.load(assetPath);
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+      targetWidth: width,
+      targetHeight: height,
+    );
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    final ByteData? byteData = await fi.image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
+    final Uint8List resizedData = byteData!.buffer.asUint8List();
+    return BitmapDescriptor.fromBytes(resizedData);
   }
 
   Future<void> _loadPointsOfInterest() async {
@@ -224,18 +344,78 @@ class MapController extends GetxController {
   void _updateMarkers() {
     final Set<Marker> newMarkers = {};
 
-    // Agrega marcadores fijos si están habilitados
-    if (showFixedMarkers.value) {
-      for (var poi in pointsOfInterest) {
+    // Agrega marcadores según el tipo seleccionado
+    if (selectedMarkerType.value != MarkerType.ninguno) {
+      Map<String, dynamic> selectedMarkers = {};
+
+      switch (selectedMarkerType.value) {
+        case MarkerType.facultades:
+          selectedMarkers = MapMarkersConsts.FAC_MARKERS;
+          break;
+        case MarkerType.paradas:
+          selectedMarkers = MapMarkersConsts.STOPS_MARKERS;
+          break;
+        case MarkerType.accesos:
+          selectedMarkers = MapMarkersConsts.ACCES_MARKERS;
+          break;
+        case MarkerType.ninguno:
+          break;
+      }
+
+      selectedMarkers.forEach((key, value) {
+        final LatLng coordinate = value['coordinate'] as LatLng;
+        String? title;
+        String? snippet;
+        BitmapDescriptor icon;
+
+        if (selectedMarkerType.value == MarkerType.facultades) {
+          title = value['name'] as String;
+          snippet = 'Facultad';
+          // Obtener ícono personalizado de la facultad
+          final facLogo = value['fac_logo'] as String?;
+          final iconKey = facLogo
+              ?.split('/')
+              .last
+              .split('.')
+              .first; // Extrae el nombre del archivo
+          icon =
+              _customIcons[iconKey] ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+        } else if (selectedMarkerType.value == MarkerType.paradas) {
+          title = 'Parada de Autobús';
+          snippet = key;
+          // Usar ícono de parada personalizado
+          final stopLogo = value['stop_logo'] as String?;
+          final iconKey = stopLogo
+              ?.split('/')
+              .last
+              .split('.')
+              .first; // Extrae el nombre del archivo (con _cuted)
+          icon =
+              _customIcons[iconKey] ??
+              _customIcons['BusStop_cuted'] ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+        } else if (selectedMarkerType.value == MarkerType.accesos) {
+          final isForPedestrian = value['isForPedestrian'] as bool;
+          title = isForPedestrian ? 'Entrada Peatonal' : 'Entrada Automóvil';
+          snippet = key;
+          // Usar ícono según el tipo de acceso
+          icon =
+              _customIcons[isForPedestrian ? 'Peatones' : 'Carros_cuted'] ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+        } else {
+          icon = BitmapDescriptor.defaultMarker;
+        }
+
         newMarkers.add(
           Marker(
-            markerId: MarkerId(poi.id),
-            position: poi.position,
-            infoWindow: InfoWindow(title: poi.name, snippet: poi.description),
-            icon: _getMarkerIcon(poi.type),
+            markerId: MarkerId(key),
+            position: coordinate,
+            infoWindow: InfoWindow(title: title ?? key, snippet: snippet),
+            icon: icon,
           ),
         );
-      }
+      });
     }
 
     // Marcador de ubicación personal no necesario - Google Maps lo muestra automáticamente con myLocationEnabled: true
@@ -257,24 +437,6 @@ class MapController extends GetxController {
     // }
 
     markers.assignAll(newMarkers);
-  }
-
-  BitmapDescriptor _getMarkerIcon(PoiType type) {
-    // Por ahora usa colores diferentes, pero puedes cargar íconos personalizados
-    switch (type) {
-      case PoiType.entrada:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueOrange,
-        );
-      case PoiType.parada:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueYellow,
-        );
-      case PoiType.facultad:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueViolet,
-        );
-    }
   }
 
   // TODO: Descomentar cuando se implemente Supabase
@@ -435,14 +597,20 @@ class MapController extends GetxController {
     _updateMarkers();
   }
 
+  void changeMarkerType(MarkerType type) {
+    selectedMarkerType.value = type;
+    _updateMarkers();
+  }
+
   Future<void> _moveCamera(
     LatLng position, {
     double zoom = DEFAULT_ZOOM,
+    double? bearing,
   }) async {
     final controller = await mapControllerCompleter.future;
     controller.animateCamera(
       CameraUpdate.newCameraPosition(
-        CameraPosition(target: position, zoom: zoom),
+        CameraPosition(target: position, zoom: zoom, bearing: bearing ?? 0.0),
       ),
     );
   }
@@ -472,7 +640,7 @@ class MapController extends GetxController {
   }
 
   Future<void> centerOnCampus() async {
-    await _moveCamera(CENTRAL_POINT);
+    await _moveCamera(CENTRAL_POINT, bearing: BEARING);
   }
 
   void onMapCreated(GoogleMapController controller) {
@@ -480,21 +648,33 @@ class MapController extends GetxController {
       mapControllerCompleter.complete(controller);
     }
     mapController = controller;
+
     // Aplicar estilo personalizado al mapa
     controller.setMapStyle(mapStyle);
 
-    // Forzar la posición inicial con bearing después de que el mapa se cargue
-    Future.delayed(const Duration(milliseconds: 500), () {
-      controller.animateCamera(
-        CameraUpdate.newCameraPosition(
-          const CameraPosition(
-            target: CENTRAL_POINT,
-            zoom: DEFAULT_ZOOM,
-            bearing: BEARING,
-          ),
-        ),
-      );
-    });
+    // Forzar la posición inicial con bearing de manera más agresiva
+    _applyInitialCameraPosition(controller);
+  }
+
+  void _applyInitialCameraPosition(GoogleMapController controller) {
+    const targetPosition = CameraPosition(
+      target: CENTRAL_POINT,
+      zoom: DEFAULT_ZOOM,
+      bearing: BEARING,
+      tilt: 0,
+    );
+
+    // Aplicación inmediata sin animación
+    controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
+
+    // Aplicaciones adicionales con delays incrementales
+    for (int i = 1; i <= 5; i++) {
+      Future.delayed(Duration(milliseconds: i * 300), () {
+        if (mapController != null) {
+          controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
+        }
+      });
+    }
   }
 
   @override
