@@ -9,4 +9,5 @@ abstract class Routes {
   static const REGISTER = '/register';
   static const GUEST = '/guest';
   static const HOME = '/home';
+  static const MAP = '/map';
 }

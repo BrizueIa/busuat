@@ -13,7 +13,9 @@ void main() async {
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    print('ℹ️ No se encontró .env, usando dart-define o variables del sistema');
+    debugPrint(
+      'ℹ️ No se encontró .env, usando dart-define o variables del sistema',
+    );
   }
 
   await GetStorage.init();
