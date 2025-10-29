@@ -641,6 +641,17 @@ class MapController extends GetxController {
 
   Future<void> centerOnCampus() async {
     await _moveCamera(CENTRAL_POINT, bearing: BEARING);
+
+    // Mostrar un feedback al usuario
+    Get.snackbar(
+      'Mapa reorientado',
+      'El mapa ha sido centrado y orientado correctamente',
+      backgroundColor: Colors.orange,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 1),
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+    );
   }
 
   void onMapCreated(GoogleMapController controller) {

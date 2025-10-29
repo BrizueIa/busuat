@@ -4,6 +4,7 @@ import '../../map/map_controller.dart';
 import '../../map/map_binding.dart';
 import '../../map/widgets/platform_map_widget.dart';
 import '../../map/widgets/marker_type_dropdown.dart';
+import '../../map/widgets/recenter_button.dart';
 
 class GuestMapView extends StatelessWidget {
   const GuestMapView({super.key});
@@ -38,6 +39,13 @@ class GuestMapView extends StatelessWidget {
                 onChanged: mapController.changeMarkerType,
               ),
             ),
+          ),
+
+          // Botón de re-centrar - posicionado en la esquina superior izquierda
+          Positioned(
+            top: 16,
+            left: 16,
+            child: RecenterButton(onPressed: mapController.centerOnCampus),
           ),
 
           // TODO: Descomentar cuando se implemente Supabase

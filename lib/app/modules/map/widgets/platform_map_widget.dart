@@ -21,7 +21,8 @@ class PlatformMapWidget extends StatelessWidget {
         initialCameraPosition: const CameraPosition(
           target: MapController.CENTRAL_POINT,
           zoom: MapController.DEFAULT_ZOOM,
-          bearing: 150,
+          bearing:
+              MapController.BEARING, // Usar el bearing correcto de 270 grados
           tilt: 0, // Sin inclinación
         ),
         markers: mapController.markers.toSet(),
@@ -36,14 +37,12 @@ class PlatformMapWidget extends StatelessWidget {
           ),
         ),
 
-        // Deshabilitar gestos
+        // Deshabilitar gestos - El usuario NO puede rotar el mapa manualmente
         zoomGesturesEnabled: false,
         scrollGesturesEnabled: false,
         tiltGesturesEnabled: false,
-        // IMPORTANTE: rotateGesturesEnabled debe ser true para que el bearing funcione
-        // Aunque esté en true, el usuario no podrá rotar porque scrollGesturesEnabled es false
-        rotateGesturesEnabled: true,
-
+        rotateGesturesEnabled:
+            false, // Deshabilitado para evitar que el usuario rote el mapa
         // Controles UI
         // En web, myLocationEnabled puede requerir permisos del navegador
         myLocationEnabled: !kIsWeb, // Deshabilitar en web por compatibilidad
