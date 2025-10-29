@@ -26,6 +26,19 @@ void main() async {
     anonKey: SupabaseConfig.supabaseAnonKey,
   );
 
+  // Autenticación anónima temporal para pruebas
+  try {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) {
+      await Supabase.instance.client.auth.signInAnonymously();
+      debugPrint('✅ Usuario anónimo creado para pruebas');
+    } else {
+      debugPrint('✅ Usuario ya autenticado: ${currentUser.id}');
+    }
+  } catch (e) {
+    debugPrint('⚠️ Error en autenticación anónima: $e');
+  }
+
   runApp(const MyApp());
 }
 
