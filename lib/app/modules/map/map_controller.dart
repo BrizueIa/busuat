@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/services/location_service.dart';
+import '../../data/services/bus_tracking_service.dart';
+import '../../data/models/bus_location.dart';
 import '../../data/models/point_of_interest.dart';
 import '../../data/models/poi_type.dart';
 import 'constants/map_markers_consts.dart';
@@ -94,9 +97,8 @@ class MapController extends GetxController {
 
   // Services
   final _locationService = LocationService();
-  // TODO: Descomentar cuando se implemente Supabase
-  // final _busTrackingService = BusTrackingService();
-  // final _supabase = Supabase.instance.client;
+  final _busTrackingService = BusTrackingService();
+  final _supabase = Supabase.instance.client;
 
   // Map controller
   Completer<GoogleMapController> mapControllerCompleter = Completer();
@@ -106,12 +108,9 @@ class MapController extends GetxController {
   final RxBool isLoading = true.obs;
   final RxBool showFixedMarkers = true.obs;
   final Rx<MarkerType> selectedMarkerType = MarkerType.ninguno.obs;
-  // final RxBool showMyLocation = false.obs; // No necesario, Google Maps muestra el punto azul automáticamente
   final RxBool isInBus = false.obs;
   final RxBool hasLocationPermission = false.obs;
-  // final Rx<LatLng?> myLocation = Rx<LatLng?>(null); // No necesario, Google Maps muestra el punto azul automáticamente
-  // TODO: Descomentar cuando se implemente Supabase
-  // final Rx<BusLocation?> busLocation = Rx<BusLocation?>(null);
+  final Rx<BusLocation?> busLocation = Rx<BusLocation?>(null);
 
   // Markers
   final markers = <Marker>{}.obs;
@@ -122,7 +121,7 @@ class MapController extends GetxController {
 
   // Streams
   StreamSubscription? _locationSubscription;
-  // StreamSubscription? _busLocationSubscription;
+  StreamSubscription? _busLocationSubscription;
 
   // Timer para mantener el bearing correcto
   Timer? _bearingEnforcer;
@@ -148,8 +147,8 @@ class MapController extends GetxController {
     // Carga marcadores fijos
     _updateMarkers();
 
-    // TODO: Descomentar cuando se implemente Supabase
-    // _subscribeToBusLocation();
+    // Suscribirse a ubicación del bus
+    _subscribeToBusLocation();
 
     isLoading.value = false;
   }
@@ -260,6 +259,13 @@ class MapController extends GetxController {
         'assets/markers/Carros_cuted.png',
         33,
         50,
+      );
+
+      // Cargar ícono del bus (60x60 px - cuadrado)
+      _customIcons['bus'] = await _getBitmapDescriptorFromAsset(
+        'assets/buses/1.png',
+        60,
+        60,
       );
     } catch (e) {
       print('Error cargando íconos personalizados: $e');
@@ -436,50 +442,37 @@ class MapController extends GetxController {
       });
     }
 
-    // Marcador de ubicación personal no necesario - Google Maps lo muestra automáticamente con myLocationEnabled: true
-
-    // TODO: Descomentar cuando se implemente Supabase
     // Agrega marcador del autobús si está disponible
-    // if (busLocation.value != null && busLocation.value!.isActive) {
-    //   newMarkers.add(
-    //     Marker(
-    //       markerId: const MarkerId('bus'),
-    //       position: busLocation.value!.position,
-    //       infoWindow: InfoWindow(
-    //         title: 'Autobús Universitario',
-    //         snippet: '${busLocation.value!.userCount} usuarios reportados',
-    //       ),
-    //       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-    //     ),
-    //   );
-    // }
+    if (busLocation.value != null && busLocation.value!.isActive) {
+      newMarkers.add(
+        Marker(
+          markerId: const MarkerId('bus'),
+          position: busLocation.value!.position,
+          infoWindow: InfoWindow(
+            title: 'Autobús Universitario',
+            snippet: '${busLocation.value!.userCount} usuarios reportados',
+          ),
+          icon:
+              _customIcons['bus'] ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        ),
+      );
+    }
 
     markers.assignAll(newMarkers);
   }
 
-  // TODO: Descomentar cuando se implemente Supabase
-  // void _subscribeToBusLocation() {
-  //   _busLocationSubscription?.cancel();
-  //   _busLocationSubscription = _busTrackingService
-  //       .getBusLocationStream()
-  //       .listen((location) {
-  //     busLocation.value = location;
-  //     _updateMarkers();
-  //   });
-  // }
+  void _subscribeToBusLocation() {
+    _busLocationSubscription?.cancel();
+    _busLocationSubscription = _busTrackingService
+        .getBusLocationStream()
+        .listen((location) {
+          busLocation.value = location;
+          _updateMarkers();
+        });
+  }
 
   Future<void> toggleInBus() async {
-    // TODO: Implementar con Supabase en el futuro
-    Get.snackbar(
-      'Función no disponible',
-      'Esta función estará disponible cuando se configure Supabase',
-      backgroundColor: Colors.orange,
-      colorText: Colors.white,
-    );
-
-    // Por ahora solo muestra un mensaje
-    // Descomentar cuando se implemente Supabase:
-    /*
     if (!hasLocationPermission.value) {
       Get.snackbar(
         'Permiso requerido',
@@ -496,23 +489,33 @@ class MapController extends GetxController {
     } else {
       await _startReportingLocation();
     }
-    */
   }
 
-  // TODO: Descomentar cuando se implemente Supabase
-  /*
   Future<void> _startReportingLocation() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        Get.snackbar(
-          'Error',
-          'No se pudo identificar el usuario',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return;
+      // Obtener o crear un usuario anónimo
+      String? tempUserId = _supabase.auth.currentUser?.id;
+
+      if (tempUserId == null) {
+        // Crear sesión anónima
+        final response = await _supabase.auth.signInAnonymously();
+        tempUserId = response.user?.id;
+
+        if (tempUserId == null) {
+          Get.snackbar(
+            'Error',
+            'No se pudo crear una sesión de usuario',
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+          return;
+        }
+
+        print('✅ Usuario anónimo creado: $tempUserId');
       }
+
+      // Ahora userId es definitivamente no-null
+      final String userId = tempUserId;
 
       final location = await _locationService.getCurrentLocation();
       if (location == null) {
@@ -526,26 +529,26 @@ class MapController extends GetxController {
       }
 
       final success = await _busTrackingService.reportUserInBus(
-        userId,
+        userId, // Ahora es String no-nullable
         location,
         0.0,
       );
 
       if (success) {
         isInBus.value = true;
-        
-        _locationSubscription = _locationService.getLocationStream().listen(
-          (position) async {
-            final newLocation = LatLng(position.latitude, position.longitude);
-            await _busTrackingService.reportUserInBus(
-              userId,
-              newLocation,
-              position.accuracy,
-            );
-          },
-        );
 
-        _busTrackingService.startTracking(userId);
+        _locationSubscription = _locationService.getLocationStream().listen((
+          position,
+        ) async {
+          final newLocation = LatLng(position.latitude, position.longitude);
+          await _busTrackingService.reportUserInBus(
+            userId, // String no-nullable
+            newLocation,
+            position.accuracy,
+          );
+        });
+
+        _busTrackingService.startTracking(userId); // String no-nullable
 
         Get.snackbar(
           'Activado',
@@ -575,7 +578,7 @@ class MapController extends GetxController {
       _locationSubscription?.cancel();
       _locationSubscription = null;
       _busTrackingService.stopTracking();
-      
+
       isInBus.value = false;
 
       Get.snackbar(
@@ -588,7 +591,6 @@ class MapController extends GetxController {
       print('Error deteniendo reporte de ubicación: $e');
     }
   }
-  */
 
   // toggleMyLocation no necesario - Google Maps muestra el punto azul automáticamente
   // Future<void> toggleMyLocation() async {
@@ -634,16 +636,6 @@ class MapController extends GetxController {
   }
 
   Future<void> centerOnBus() async {
-    // TODO: Implementar cuando se configure Supabase
-    Get.snackbar(
-      'No disponible',
-      'Esta función estará disponible cuando se configure el tracking del autobús',
-      backgroundColor: Colors.orange,
-      colorText: Colors.white,
-    );
-
-    // Descomentar cuando se implemente:
-    /*
     if (busLocation.value != null) {
       await _moveCamera(busLocation.value!.position);
     } else {
@@ -654,7 +646,6 @@ class MapController extends GetxController {
         colorText: Colors.white,
       );
     }
-    */
   }
 
   Future<void> centerOnCampus() async {
@@ -772,9 +763,8 @@ class MapController extends GetxController {
   void onClose() {
     _locationSubscription?.cancel();
     _bearingEnforcer?.cancel();
-    // TODO: Descomentar cuando se implemente Supabase
-    // _busLocationSubscription?.cancel();
-    // _busTrackingService.dispose();
+    _busLocationSubscription?.cancel();
+    _busTrackingService.dispose();
 
     // No es necesario hacer dispose del mapController
     // GoogleMapController se limpia automáticamente cuando el widget se destruye

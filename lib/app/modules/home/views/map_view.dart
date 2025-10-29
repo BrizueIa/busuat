@@ -48,20 +48,19 @@ class MapView extends StatelessWidget {
             child: RecenterButton(onPressed: mapController.centerOnCampus),
           ),
 
-          // TODO: Descomentar cuando se implemente Supabase
           // Información del bus (si está activo)
-          // Obx(() {
-          //   final bus = controller.busLocation.value;
-          //   if (bus == null || !bus.isActive) {
-          //     return const SizedBox.shrink();
-          //   }
+          Obx(() {
+            final bus = mapController.busLocation.value;
+            if (bus == null || !bus.isActive) {
+              return const SizedBox.shrink();
+            }
 
-          //   return Positioned(
-          //     top: 16,
-          //     left: 16,
-          //     child: _BuildBusInfoCard(busLocation: bus),
-          //   );
-          // }),
+            return Positioned(
+              top: 80,
+              left: 16,
+              child: _BuildBusInfoCard(busLocation: bus),
+            );
+          }),
 
           // Switch "Estoy en el bus" - pegado al bottom
           Positioned(
@@ -72,16 +71,7 @@ class MapView extends StatelessWidget {
               () => _BuildInBusSwitchBar(
                 isInBus: mapController.isInBus.value,
                 onChanged: (value) {
-                  mapController.isInBus.value = value;
-                  Get.snackbar(
-                    value ? 'Activado' : 'Desactivado',
-                    value
-                        ? 'Función disponible cuando se configure la base de datos'
-                        : 'Has dejado de reportar tu ubicación',
-                    backgroundColor: value ? Colors.green : Colors.orange,
-                    colorText: Colors.white,
-                    duration: const Duration(seconds: 2),
-                  );
+                  mapController.toggleInBus();
                 },
               ),
             ),
@@ -163,6 +153,67 @@ class _BuildInBusSwitchBar extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BuildBusInfoCard extends StatelessWidget {
+  final dynamic busLocation;
+
+  const _BuildBusInfoCard({required this.busLocation});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.directions_bus,
+              color: Colors.green.shade700,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Bus en servicio',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${busLocation.userCount} usuarios reportados',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
