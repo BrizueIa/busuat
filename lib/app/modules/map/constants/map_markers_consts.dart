@@ -45,32 +45,40 @@ abstract class MapMarkersConsts {
   };
 
   static Map<String, dynamic> STOPS_MARKERS = {
-    //No lleva asstet ya que es el mismo en todos
     'ParadaEntradaPrincipal': {
+      'name': 'Parada Entrada Principal',
       'coordinate': const LatLng(22.278027, -97.861074),
       'stop_logo': 'assets/markers/Entrada_cuted.png',
     },
     'ParadaColera': {
+      'name': 'Parada Cólera',
       'coordinate': const LatLng(22.278241, -97.865306),
       'stop_logo': 'assets/markers/Colera.png',
     },
     'ParadaIngenieria': {
+      'name': 'Parada Ingeniería',
       'coordinate': const LatLng(22.277044, -97.865414),
-      'stop_logo': 'assets/markers/FIT_cuted.png',
+      'stop_logo':
+          'assets/markers/FIT_cuted.png', // Logo de Facultad de Ingeniería
     },
     'ParadaDerecho': {
+      'name': 'Parada Derecho',
       'coordinate': const LatLng(22.275550, -97.865424),
-      'stop_logo': 'assets/markers/BusStop_cuted.png',
+      'stop_logo': 'assets/markers/FADYCS.png', // Logo de Facultad de Derecho
     },
     'ParadaArquitectura': {
+      'name': 'Parada Arquitectura',
       'coordinate': const LatLng(22.275074, -97.863472),
-      'stop_logo': 'assets/markers/BusStop_cuted.png',
+      'stop_logo':
+          'assets/markers/FADU.png', // Logo de Facultad de Arquitectura
     },
     'ParadaComercio': {
+      'name': 'Parada Comercio',
       'coordinate': const LatLng(22.275131, -97.862650),
-      'stop_logo': 'assets/markers/BusStop_cuted.png',
+      'stop_logo': 'assets/markers/FCAT.png', // Logo de Facultad de Comercio
     },
     'ParadaGym': {
+      'name': 'Parada Gimnasio',
       'coordinate': const LatLng(22.275952, -97.859293),
       'stop_logo': 'assets/markers/GYM.png',
     },
