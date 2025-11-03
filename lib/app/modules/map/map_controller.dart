@@ -19,7 +19,7 @@ enum MarkerType { facultades, paradas, accesos, ninguno }
 class MapController extends GetxController {
   static const CENTRAL_POINT = LatLng(22.277125, -97.862299);
   static const double DEFAULT_ZOOM = 16.4; // Reducido para ver toda la facultad
-  static const double MOBILE_ZOOM = 16.5; // +1 zoom para móvil
+  static const double MOBILE_ZOOM = 16.5; // +.1 zoom para móvil
   static const double BEARING = 270.0;
 
   // Mínimo de usuarios requeridos para mostrar el bus en el mapa
@@ -492,9 +492,17 @@ class MapController extends GetxController {
     }
 
     // Agrega marcador del autobús si está disponible y tiene usuarios
-    if (busLocation.value != null &&
+    final shouldShowBus =
+        busLocation.value != null &&
         busLocation.value!.isActive &&
-        busLocation.value!.userCount >= MIN_USERS_TO_SHOW_BUS) {
+        busLocation.value!.userCount >= MIN_USERS_TO_SHOW_BUS;
+
+    if (shouldShowBus) {
+      print('🚌 Mostrando marcador del bus:');
+      print('   - userCount: ${busLocation.value!.userCount}');
+      print('   - MIN_USERS_TO_SHOW_BUS: $MIN_USERS_TO_SHOW_BUS');
+      print('   - isActive: ${busLocation.value!.isActive}');
+
       final busMarker = Marker(
         markerId: const MarkerId('bus'),
         position: busLocation.value!.position,
@@ -508,6 +516,14 @@ class MapController extends GetxController {
       );
 
       newMarkers.add(busMarker);
+    } else if (busLocation.value != null) {
+      print('❌ Bus NO visible:');
+      print('   - userCount: ${busLocation.value!.userCount}');
+      print('   - MIN_USERS_TO_SHOW_BUS: $MIN_USERS_TO_SHOW_BUS');
+      print('   - isActive: ${busLocation.value!.isActive}');
+      print(
+        '   - Condición: ${busLocation.value!.userCount} >= $MIN_USERS_TO_SHOW_BUS = ${busLocation.value!.userCount >= MIN_USERS_TO_SHOW_BUS}',
+      );
     }
 
     markers.assignAll(newMarkers);

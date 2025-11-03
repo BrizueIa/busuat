@@ -140,7 +140,15 @@ class BusTrackingService {
 
               // Leer userCount desde la base de datos
               final userCount = (busData['user_count'] as int?) ?? 0;
+              final isActive = userCount >= MapController.MIN_USERS_TO_SHOW_BUS;
+
               print('   userCount: $userCount');
+              print(
+                '   MIN_USERS_TO_SHOW_BUS: ${MapController.MIN_USERS_TO_SHOW_BUS}',
+              );
+              print(
+                '   isActive: $isActive (userCount >= MIN_USERS_TO_SHOW_BUS)',
+              );
 
               final busLocation = BusLocation(
                 position: LatLng(
@@ -149,7 +157,7 @@ class BusTrackingService {
                 ),
                 timestamp: DateTime.now(),
                 userCount: userCount,
-                isActive: userCount >= MapController.MIN_USERS_TO_SHOW_BUS,
+                isActive: isActive,
               );
 
               // ✅ Agregar al stream
