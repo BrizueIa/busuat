@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -18,7 +19,11 @@ enum MarkerType { facultades, paradas, accesos, ninguno }
 class MapController extends GetxController {
   static const CENTRAL_POINT = LatLng(22.277125, -97.862299);
   static const double DEFAULT_ZOOM = 16.4; // Reducido para ver toda la facultad
+  static const double MOBILE_ZOOM = 16.5; // +1 zoom para móvil
   static const double BEARING = 270.0;
+
+  // Mínimo de usuarios requeridos para mostrar el bus en el mapa
+  static const int MIN_USERS_TO_SHOW_BUS = 1;
 
   // Estilo personalizado del mapa
   static const String mapStyle = '''
@@ -112,12 +117,18 @@ class MapController extends GetxController {
   final RxBool hasLocationPermission = false.obs;
   final Rx<BusLocation?> busLocation = Rx<BusLocation?>(null);
 
+  // Lock para evitar múltiples llamadas simultáneas
+  bool _isTogglingBus = false;
+
   // Markers
   final markers = <Marker>{}.obs;
   final RxList<PointOfInterest> pointsOfInterest = <PointOfInterest>[].obs;
 
   // Cache de íconos personalizados
   final Map<String, BitmapDescriptor> _customIcons = {};
+
+  // Cache de última posición del bus para evitar actualizaciones innecesarias
+  LatLng? _lastBusPosition;
 
   // Streams
   StreamSubscription? _locationSubscription;
@@ -165,112 +176,150 @@ class MapController extends GetxController {
 
   Future<void> _loadCustomIcons() async {
     try {
-      // Cargar íconos de facultades (33x50 px - rectangulares)
+      // Determinar tamaños según plataforma
+      // Móvil: 48x48 (cuadrados)
+      // Web: 33x50 (rectangulares, mantener proporción original)
+      final int width = kIsWeb ? 33 : 75;
+      final int height = kIsWeb ? 50 : 80;
+
+      // Cargar íconos de facultades
       _customIcons['FET'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FET.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FMA'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FMA.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FIT'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FIT.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FADYCS'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FADYCS.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FADU'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FADU.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FCAT'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FCAT.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FO'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FO.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FMT'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FMT.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FADYCS'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FADYCS.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FADU'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FADU.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FCAT'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FCAT.png',
-        33,
-        50,
+        width,
+        height,
       );
 
-      // Cargar íconos de paradas (33x50 px - rectangulares)
+      // Cargar íconos de paradas
       _customIcons['BusStop_cuted'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/BusStop_cuted.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['Entrada_cuted'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/Entrada_cuted.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['FIT_cuted'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/FIT_cuted.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['Colera'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/Colera.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['GYM'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/GYM.png',
-        33,
-        50,
+        width,
+        height,
       );
 
-      // Cargar íconos de accesos (33x50 px - rectangulares)
+      // Cargar íconos de accesos
       _customIcons['Peatones'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/Peatones.png',
-        33,
-        50,
+        width,
+        height,
       );
       _customIcons['Carros_cuted'] = await _getBitmapDescriptorFromAsset(
         'assets/markers/Carros_cuted.png',
-        33,
-        50,
+        width,
+        height,
       );
 
-      // Cargar ícono del bus (60x60 px - cuadrado)
-      _customIcons['bus'] = await _getBitmapDescriptorFromAsset(
-        'assets/buses/1.png',
-        60,
-        60,
-      );
+      // Cargar ícono del bus - Marcador genérico naranja
+      _customIcons['bus'] = await _createGenericBusMarker();
     } catch (e) {
       print('Error cargando íconos personalizados: $e');
       // Si falla, los marcadores usarán los íconos por defecto
     }
+  }
+
+  /// Crea un marcador genérico para el bus (círculo naranja)
+  Future<BitmapDescriptor> _createGenericBusMarker() async {
+    final int size = kIsWeb
+        ? 80
+        : 60; // Más grande en web, más pequeño en móvil
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final paint = Paint()..isAntiAlias = true;
+
+    final center = Offset(size / 2, size / 2);
+    final radius = size / 2.5;
+
+    // 1. Dibujar sombra
+    paint.color = Colors.black.withOpacity(0.3);
+    canvas.drawCircle(Offset(center.dx, center.dy + 2), radius, paint);
+
+    // 2. Dibujar círculo naranja
+    paint.color = Colors.orange;
+    canvas.drawCircle(center, radius, paint);
+
+    // 3. Dibujar borde blanco
+    paint.color = Colors.white;
+    paint.style = PaintingStyle.stroke;
+    paint.strokeWidth = 3;
+    canvas.drawCircle(center, radius, paint);
+
+    // 4. Convertir a imagen
+    final picture = recorder.endRecording();
+    final img = await picture.toImage(size, size);
+    final ByteData? byteData = await img.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
+
+    return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
   }
 
   Future<BitmapDescriptor> _getBitmapDescriptorFromAsset(
@@ -442,21 +491,23 @@ class MapController extends GetxController {
       });
     }
 
-    // Agrega marcador del autobús si está disponible
-    if (busLocation.value != null && busLocation.value!.isActive) {
-      newMarkers.add(
-        Marker(
-          markerId: const MarkerId('bus'),
-          position: busLocation.value!.position,
-          infoWindow: InfoWindow(
-            title: 'Autobús Universitario',
-            snippet: '${busLocation.value!.userCount} usuarios reportados',
-          ),
-          icon:
-              _customIcons['bus'] ??
-              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+    // Agrega marcador del autobús si está disponible y tiene usuarios
+    if (busLocation.value != null &&
+        busLocation.value!.isActive &&
+        busLocation.value!.userCount >= MIN_USERS_TO_SHOW_BUS) {
+      final busMarker = Marker(
+        markerId: const MarkerId('bus'),
+        position: busLocation.value!.position,
+        infoWindow: InfoWindow(
+          title: 'Autobús Universitario',
+          snippet: '${busLocation.value!.userCount} usuarios reportados',
         ),
+        icon:
+            _customIcons['bus'] ??
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
       );
+
+      newMarkers.add(busMarker);
     }
 
     markers.assignAll(newMarkers);
@@ -466,42 +517,92 @@ class MapController extends GetxController {
     _busLocationSubscription?.cancel();
     _busLocationSubscription = _busTrackingService
         .getBusLocationStream()
-        .listen((location) {
-          busLocation.value = location;
-          _updateMarkers();
-        });
+        .listen(
+          (location) {
+            if (location != null) {
+              final newPosition = location.position;
+              bool shouldUpdate = false;
+
+              if (_lastBusPosition == null) {
+                shouldUpdate = true;
+              } else {
+                final latDiff =
+                    (_lastBusPosition!.latitude - newPosition.latitude).abs();
+                final lngDiff =
+                    (_lastBusPosition!.longitude - newPosition.longitude).abs();
+
+                // 0.00005 grados ≈ 5 metros
+                if (latDiff > 0.00005 || lngDiff > 0.00005) {
+                  shouldUpdate = true;
+                }
+              }
+
+              if (shouldUpdate) {
+                print('📍 Bus moved: $newPosition');
+                _lastBusPosition = newPosition;
+                busLocation.value = location;
+                _updateMarkers();
+              }
+            } else {
+              _lastBusPosition = null;
+              busLocation.value = null;
+              _updateMarkers();
+            }
+          },
+          onError: (error, stackTrace) {
+            print('❌ Realtime error: $error');
+          },
+        );
   }
 
   Future<void> toggleInBus() async {
-    if (!hasLocationPermission.value) {
-      Get.snackbar(
-        'Permiso requerido',
-        'Necesitas otorgar permisos de ubicación',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
-      await _checkLocationPermission();
+    // ✅ Prevenir múltiples llamadas simultáneas
+    if (_isTogglingBus) {
+      print('⚠️ toggleInBus ya está en ejecución, ignorando llamada...');
       return;
     }
 
-    if (isInBus.value) {
-      await _stopReportingLocation();
-    } else {
-      await _startReportingLocation();
+    _isTogglingBus = true;
+    print('🔒 Lock activado para toggleInBus');
+
+    try {
+      if (!hasLocationPermission.value) {
+        Get.snackbar(
+          'Permiso requerido',
+          'Necesitas otorgar permisos de ubicación',
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+        await _checkLocationPermission();
+        return;
+      }
+
+      if (isInBus.value) {
+        await _stopReportingLocation();
+      } else {
+        await _startReportingLocation();
+      }
+    } finally {
+      _isTogglingBus = false;
+      print('🔓 Lock liberado para toggleInBus');
     }
   }
 
   Future<void> _startReportingLocation() async {
     try {
+      print('🚀 Iniciando reporte de ubicación...');
+
       // Obtener o crear un usuario anónimo
       String? tempUserId = _supabase.auth.currentUser?.id;
 
       if (tempUserId == null) {
+        print('⚠️ No hay usuario actual, creando sesión anónima...');
         // Crear sesión anónima
         final response = await _supabase.auth.signInAnonymously();
         tempUserId = response.user?.id;
 
         if (tempUserId == null) {
+          print('❌ Error: No se pudo crear sesión anónima');
           Get.snackbar(
             'Error',
             'No se pudo crear una sesión de usuario',
@@ -512,13 +613,17 @@ class MapController extends GetxController {
         }
 
         print('✅ Usuario anónimo creado: $tempUserId');
+      } else {
+        print('✅ Usuario existente encontrado: $tempUserId');
       }
 
       // Ahora userId es definitivamente no-null
       final String userId = tempUserId;
 
+      print('📍 Obteniendo ubicación actual...');
       final location = await _locationService.getCurrentLocation();
       if (location == null) {
+        print('❌ Error: No se pudo obtener ubicación');
         Get.snackbar(
           'Error',
           'No se pudo obtener tu ubicación',
@@ -528,19 +633,26 @@ class MapController extends GetxController {
         return;
       }
 
+      print('✅ Ubicación obtenida: $location');
+      print('🔄 Llamando a BusTrackingService...');
+
       final success = await _busTrackingService.reportUserInBus(
         userId, // Ahora es String no-nullable
         location,
         0.0,
       );
 
+      print('📊 Resultado de reportUserInBus: $success');
+
       if (success) {
         isInBus.value = true;
 
+        print('🎧 Iniciando stream de ubicación...');
         _locationSubscription = _locationService.getLocationStream().listen((
           position,
         ) async {
           final newLocation = LatLng(position.latitude, position.longitude);
+          print('📍 Nueva ubicación detectada: $newLocation');
           await _busTrackingService.reportUserInBus(
             userId, // String no-nullable
             newLocation,
@@ -556,9 +668,18 @@ class MapController extends GetxController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
+      } else {
+        print('❌ Error: reportUserInBus retornó false');
+        Get.snackbar(
+          'Error',
+          'No se pudo reportar tu ubicación al servidor',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
-      print('Error iniciando reporte de ubicación: $e');
+      print('❌ ERROR CRÍTICO iniciando reporte de ubicación: $e');
+      print('   Stack trace: ${StackTrace.current}');
       Get.snackbar(
         'Error',
         'No se pudo iniciar el reporte de ubicación',
@@ -664,52 +785,78 @@ class MapController extends GetxController {
   }
 
   void onMapCreated(GoogleMapController controller) {
+    // Solo completar si no está ya completado
     if (!mapControllerCompleter.isCompleted) {
       mapControllerCompleter.complete(controller);
+      mapController = controller;
+    } else {
+      // Si ya existe un controller, solo actualizar la referencia
+      mapController = controller;
     }
-    mapController = controller;
 
     // Aplicar estilo personalizado al mapa
-    controller.setMapStyle(mapStyle);
+    try {
+      controller.setMapStyle(mapStyle);
+    } catch (e) {
+      print('Error aplicando estilo del mapa: $e');
+    }
 
-    // Forzar la posición inicial con bearing de manera MUY agresiva
+    // Forzar la posición inicial con bearing
     _applyInitialCameraPosition(controller);
 
     // Aplicar bearing adicional después de un delay
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mapController != null) {
         _forceCorrectBearing();
       }
     });
 
-    // Timer que verifica y corrige el bearing cada 2 segundos
+    // Cancelar timer anterior si existe
     _bearingEnforcer?.cancel();
+
+    // Timer que verifica y corrige el bearing cada 2 segundos
     _bearingEnforcer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      ensureCorrectBearing();
+      if (mapController != null) {
+        ensureCorrectBearing();
+      }
     });
   }
 
   void _applyInitialCameraPosition(GoogleMapController controller) {
-    const targetPosition = CameraPosition(
+    final targetPosition = CameraPosition(
       target: CENTRAL_POINT,
-      zoom: DEFAULT_ZOOM,
+      zoom: kIsWeb ? DEFAULT_ZOOM : MOBILE_ZOOM,
       bearing: BEARING,
       tilt: 0,
     );
 
-    // Aplicación inmediata sin animación - múltiples veces
-    controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
-    controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
-    controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
-
-    // Aplicaciones adicionales con delays incrementales
-    for (int i = 1; i <= 10; i++) {
-      Future.delayed(Duration(milliseconds: i * 200), () {
-        if (mapController != null) {
-          controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
-        }
-      });
+    // Aplicación inicial sin animación
+    try {
+      controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
+    } catch (e) {
+      print('Error aplicando posición inicial: $e');
     }
+
+    // Aplicaciones adicionales con delays para asegurar que se aplique
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mapController != null) {
+        try {
+          controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
+        } catch (e) {
+          print('Error en reintento de posición: $e');
+        }
+      }
+    });
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mapController != null) {
+        try {
+          controller.moveCamera(CameraUpdate.newCameraPosition(targetPosition));
+        } catch (e) {
+          print('Error en segundo reintento: $e');
+        }
+      }
+    });
   }
 
   // Método para forzar el bearing correcto
@@ -718,9 +865,9 @@ class MapController extends GetxController {
 
     try {
       final controller = await mapControllerCompleter.future;
-      const targetPosition = CameraPosition(
+      final targetPosition = CameraPosition(
         target: CENTRAL_POINT,
-        zoom: DEFAULT_ZOOM,
+        zoom: kIsWeb ? DEFAULT_ZOOM : MOBILE_ZOOM,
         bearing: BEARING,
         tilt: 0,
       );
@@ -746,9 +893,9 @@ class MapController extends GetxController {
       final controller = await mapControllerCompleter.future;
 
       // Siempre re-aplicar el bearing correcto cuando la cámara deja de moverse
-      const targetPosition = CameraPosition(
+      final targetPosition = CameraPosition(
         target: CENTRAL_POINT,
-        zoom: DEFAULT_ZOOM,
+        zoom: kIsWeb ? DEFAULT_ZOOM : MOBILE_ZOOM,
         bearing: BEARING,
         tilt: 0,
       );
@@ -761,10 +908,25 @@ class MapController extends GetxController {
 
   @override
   void onClose() {
+    // Cancelar todas las suscripciones
     _locationSubscription?.cancel();
+    _locationSubscription = null;
+
     _bearingEnforcer?.cancel();
+    _bearingEnforcer = null;
+
     _busLocationSubscription?.cancel();
-    _busTrackingService.dispose();
+    _busLocationSubscription = null;
+
+    // Limpiar el tracking service
+    try {
+      _busTrackingService.dispose();
+    } catch (e) {
+      print('Error en dispose de BusTrackingService: $e');
+    }
+
+    // Limpiar el map controller
+    mapController = null;
 
     // No es necesario hacer dispose del mapController
     // GoogleMapController se limpia automáticamente cuando el widget se destruye

@@ -22,9 +22,9 @@ class PlatformMapWidget extends StatelessWidget {
           // Cuando la cámara deja de moverse, verificar y corregir bearing
           mapController.ensureCorrectBearing();
         },
-        initialCameraPosition: const CameraPosition(
+        initialCameraPosition: CameraPosition(
           target: MapController.CENTRAL_POINT,
-          zoom: MapController.DEFAULT_ZOOM,
+          zoom: kIsWeb ? MapController.DEFAULT_ZOOM : MapController.MOBILE_ZOOM,
           bearing:
               MapController.BEARING, // Usar el bearing correcto de 270 grados
           tilt: 0, // Sin inclinación
@@ -42,22 +42,20 @@ class PlatformMapWidget extends StatelessWidget {
         ),
 
         // Deshabilitar gestos - El usuario NO puede rotar el mapa manualmente
-        zoomGesturesEnabled: false,
-        scrollGesturesEnabled: false,
-        tiltGesturesEnabled: false,
-        rotateGesturesEnabled:
-            false, // Deshabilitado para evitar que el usuario rote el mapa
-        // Controles UI
-        // En web, myLocationEnabled puede requerir permisos del navegador
+        zoomGesturesEnabled: true, // Permitir zoom con pellizco
+        scrollGesturesEnabled: kIsWeb, // Solo permitir mover el mapa en web
+        tiltGesturesEnabled: false, // No inclinar
+        rotateGesturesEnabled: false, // NO permitir rotación manual
+        // Controles UI - Todos desactivados para interfaz limpia
         myLocationEnabled: !kIsWeb, // Deshabilitar en web por compatibilidad
-        myLocationButtonEnabled: false,
-        zoomControlsEnabled: false,
-        mapToolbarEnabled: false,
-        compassEnabled: false,
-        indoorViewEnabled: false,
-        trafficEnabled: false,
-        buildingsEnabled: true,
-
+        myLocationButtonEnabled: false, // Sin botón de ubicación
+        zoomControlsEnabled: false, // Sin botones de zoom +/-
+        mapToolbarEnabled:
+            false, // Sin toolbar (direcciones, abrir en Google Maps, etc)
+        compassEnabled: false, // Sin brújula
+        indoorViewEnabled: false, // Sin vista interior de edificios
+        trafficEnabled: false, // Sin tráfico
+        buildingsEnabled: true, // Mantener edificios 3D
         // Configuraciones específicas para web
         // La web puede tener diferentes comportamientos de gestos
         liteModeEnabled: false,

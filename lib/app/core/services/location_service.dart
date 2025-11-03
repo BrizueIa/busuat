@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -70,14 +71,40 @@ class LocationService {
   }
 
   /// Stream de ubicación en tiempo real
+  /// Actualiza cada 2 segundos O cada 5 metros (lo que ocurra primero)
   Stream<Position> getLocationStream() {
-    _positionStream ??= Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5, // Actualiza cada 5 metros
-        timeLimit: Duration(seconds: 10),
-      ),
-    );
+    if (_positionStream == null) {
+      // Crear stream personalizado que emite cada 2 segundos
+      final controller = StreamController<Position>();
+
+      // Stream periódico cada 2 segundos
+      Stream.periodic(const Duration(seconds: 2))
+          .asyncMap((_) async {
+            try {
+              return await Geolocator.getCurrentPosition(
+                locationSettings: const LocationSettings(
+                  accuracy: LocationAccuracy.high,
+                ),
+              );
+            } catch (e) {
+              print('⚠️ Error obteniendo posición: $e');
+              return null;
+            }
+          })
+          .where((position) => position != null)
+          .listen(
+            (position) {
+              if (position != null) {
+                controller.add(position);
+              }
+            },
+            onError: (error) => print('❌ Error en location stream: $error'),
+            onDone: () => controller.close(),
+            cancelOnError: false,
+          );
+
+      _positionStream = controller.stream;
+    }
     return _positionStream!;
   }
 
