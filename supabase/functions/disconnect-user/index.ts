@@ -51,24 +51,24 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Llamamos a la función que ahora hace TODO
-    const { data, error } = await supabase.rpc("disconnect_user_and_find_nearby_count", {
+    // 1) Llamar al RPC existente para desconectar al usuario
+    const { data: rpcData, error: rpcError } = await supabase.rpc("disconnect_user_and_find_nearby_count", {
       p_user_id: user_id,
       p_radius_m: radius_meters || 50
     });
 
-    if (error) {
-      console.error("RPC error:", error);
+    if (rpcError) {
+      console.error("RPC error:", rpcError);
       
-      if (error.message.includes("User not found")) {
+      if (rpcError.message.includes("User not found")) {
         return new Response(
           JSON.stringify({
-            error: error.message
+            error: rpcError.message
           }),
           {
             status: 404,
             headers: {
-              ...corsHeaders, // ✅ CORS en error
+              ...corsHeaders,
               "Content-Type": "application/json"
             }
           }
@@ -82,16 +82,77 @@ serve(async (req) => {
         {
           status: 500,
           headers: {
-            ...corsHeaders, // ✅ CORS en error
+            ...corsHeaders,
             "Content-Type": "application/json"
           }
         }
       );
     }
 
-    // ✅ Respuesta exitosa con CORS
+    // 2) Contar usuarios activos CERCANOS restantes (no globales)
+    // ✅ FIX: Usar conteo de proximidad, no conteo global
+    // El RPC ya nos dio el nearby_count, pero necesitamos recalcularlo
+    // porque el usuario actual ya fue desconectado
+    const { data: nearbyUsersData, error: nearbyError } = await supabase.rpc("nearby_count_for", {
+      p_user_id: user_id,  // Aunque esté desconectado, usar su última posición
+      p_radius_m: radius_meters || 50
+    });
+
+    if (nearbyError) {
+      console.error("Nearby count error:", nearbyError);
+    }
+
+    // El conteo de usuarios cercanos (sin incluir al que se desconectó)
+    const userCount = nearbyUsersData ?? 0;
+
+    // 3) Actualizar user_count en la tabla buses o eliminar el bus
+    if (userCount > 0) {
+      // Obtener la última posición de un usuario activo
+      const { data: activeUser, error: activeUserError } = await supabase
+        .from("user_locations")
+        .select("lat, lng")
+        .eq("is_active", true)
+        .limit(1)
+        .single();
+
+      if (!activeUserError && activeUser) {
+        const { error: busUpdateError } = await supabase
+          .from("buses")
+          .upsert({
+            bus_number: 1,
+            lat: activeUser.lat,
+            lng: activeUser.lng,
+            user_count: userCount,
+          }, {
+            onConflict: "bus_number",
+          });
+
+        if (busUpdateError) {
+          console.error("Bus update error:", busUpdateError);
+        } else {
+          console.log(`Bus 1 updated: ${userCount} active users after disconnect`);
+        }
+      }
+    } else {
+      // No quedan usuarios activos, eliminar el bus
+      const { error: deleteError } = await supabase
+        .from("buses")
+        .delete()
+        .eq("bus_number", 1);
+
+      if (deleteError) {
+        console.error("Bus delete error:", deleteError);
+      } else {
+        console.log("Bus 1 removed (no active users remaining)");
+      }
+    }
+
+    // ✅ Respuesta exitosa con datos del RPC + user_count actualizado
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify({
+        ...rpcData,
+        user_count: userCount,
+      }),
       {
         status: 200,
         headers: {

@@ -5,6 +5,8 @@ import '../models/bus_location.dart';
 import '../../modules/map/map_controller.dart';
 
 class BusTrackingService {
+  // Control de logging desde MapController
+  static bool get _debug => MapController.ENABLE_DEBUG_LOGS;
   static BusTrackingService? _instance;
 
   BusTrackingService._();
@@ -45,9 +47,9 @@ class BusTrackingService {
         },
       );
 
-      print('📥 Respuesta recibida:');
+      print('📥 RESPUESTA DE EDGE FUNCTION user-location-change:');
       print('   Status: ${response.status}');
-      print('   Data: ${response.data}');
+      print('   Data completa: ${response.data}');
 
       if (response.status != 200) {
         print('❌ Error en Edge Function: ${response.status}');
@@ -57,12 +59,17 @@ class BusTrackingService {
 
       final data = response.data as Map<String, dynamic>?;
       final nearbyCount = data?['nearby_count'] ?? 0;
+      final userCount = data?['user_count'] ?? 0; // ← Ver si viene user_count
 
-      print('✅ Ubicación reportada. Usuarios cercanos: $nearbyCount');
+      print('✅ Ubicación reportada exitosamente');
+      print('   nearby_count de respuesta: $nearbyCount');
+      print('   user_count de respuesta: $userCount');
+      print('   ⚠️ NOTA: La tabla buses debería tener user_count = $userCount');
+
       return true;
     } catch (e) {
       print('❌ Error reportando ubicación del usuario: $e');
-      print('   Stack trace: ${StackTrace.current}');
+      if (_debug) print('   Stack trace: ${StackTrace.current}');
       return false;
     }
   }
@@ -70,20 +77,24 @@ class BusTrackingService {
   /// Elimina el reporte del usuario llamando a la Edge Function
   Future<bool> removeUserFromBus(String userId) async {
     try {
-      print('🔵 Llamando a Edge Function disconnect-user...');
-      print('   User ID: $userId');
+      if (_debug) {
+        print('🔵 Llamando a Edge Function disconnect-user...');
+        print('   User ID: $userId');
+      }
 
       final response = await _supabase.functions.invoke(
         'disconnect-user',
         body: {'user_id': userId, 'radius_meters': 50},
       );
 
-      print('📥 Respuesta recibida:');
-      print('   Status: ${response.status}');
-      print('   Data: ${response.data}');
+      if (_debug) {
+        print('📥 Respuesta recibida:');
+        print('   Status: ${response.status}');
+        print('   Data: ${response.data}');
+      }
 
       if (response.status == 200 || response.status == 404) {
-        print('✅ Usuario desconectado correctamente');
+        if (_debug) print('✅ Usuario desconectado correctamente');
         return true;
       }
 
@@ -91,7 +102,7 @@ class BusTrackingService {
       return false;
     } catch (e) {
       print('❌ Error removiendo usuario del bus: $e');
-      print('   Stack trace: ${StackTrace.current}');
+      if (_debug) print('   Stack trace: ${StackTrace.current}');
       return false;
     }
   }
@@ -99,9 +110,11 @@ class BusTrackingService {
   /// Stream de actualizaciones de la ubicación del bus desde la tabla 'buses'
   /// ✅ USANDO .channel().onPostgresChanges() (Supabase Flutter v2.9.1)
   Stream<BusLocation?> getBusLocationStream() {
-    print('📡 Iniciando Realtime Channel para tabla buses...');
-    print('   Bus number: $BUS_NUMBER');
-    print('   Método: .channel().onPostgresChanges() ✅');
+    if (_debug) {
+      print('📡 Iniciando Realtime Channel para tabla buses...');
+      print('   Bus number: $BUS_NUMBER');
+      print('   Método: .channel().onPostgresChanges() ✅');
+    }
 
     final controller = StreamController<BusLocation?>.broadcast();
 
@@ -135,19 +148,19 @@ class BusTrackingService {
               final lat = busData['lat'];
               final lng = busData['lng'];
 
-              print('   lat: $lat');
-              print('   lng: $lng');
-
               // Leer userCount desde la base de datos
               final userCount = (busData['user_count'] as int?) ?? 0;
               final isActive = userCount >= MapController.MIN_USERS_TO_SHOW_BUS;
 
-              print('   userCount: $userCount');
+              print('📡 REALTIME: Evento recibido de la tabla buses');
+              print('   Evento: ${payload.eventType}');
+              print('   lat: $lat, lng: $lng');
+              print('   user_count (de DB): $userCount');
               print(
                 '   MIN_USERS_TO_SHOW_BUS: ${MapController.MIN_USERS_TO_SHOW_BUS}',
               );
               print(
-                '   isActive: $isActive (userCount >= MIN_USERS_TO_SHOW_BUS)',
+                '   isActive calculado: $isActive ($userCount >= ${MapController.MIN_USERS_TO_SHOW_BUS})',
               );
 
               final busLocation = BusLocation(
@@ -160,36 +173,45 @@ class BusTrackingService {
                 isActive: isActive,
               );
 
+              print('✅ BusLocation creado y enviado al stream:');
+              print('   position: ${busLocation.position}');
+              print('   userCount: ${busLocation.userCount}');
+              print('   isActive: ${busLocation.isActive}');
+
               // ✅ Agregar al stream
               controller.add(busLocation);
+              print('✅ BusLocation agregado al stream controller\n');
             } catch (e, stackTrace) {
               print('❌ ERROR PARSEANDO: $e');
-              print('   Stack: $stackTrace');
+              if (_debug) print('   Stack: $stackTrace');
 
               controller.add(null);
             }
           },
         )
         .subscribe((status, error) {
-          print('🔌 REALTIME CHANNEL STATUS CHANGE');
+          if (_debug) {
+            print('🔌 REALTIME CHANNEL STATUS CHANGE');
+            print('   Status: $status');
+            print('   Error: $error');
+            print('   Timestamp: ${DateTime.now()}');
 
-          print('   Status: $status');
-          print('   Error: $error');
-          print('   Timestamp: ${DateTime.now()}');
-
-          if (status == RealtimeSubscribeStatus.subscribed) {
-            print('✅ ✅ ✅ CHANNEL CONECTADO EXITOSAMENTE ✅ ✅ ✅\n');
-          } else if (status == RealtimeSubscribeStatus.channelError) {
-            print('❌ ❌ ❌ ERROR EN CHANNEL: $error ❌ ❌ ❌\n');
-          } else if (status == RealtimeSubscribeStatus.timedOut) {
-            print('⏰ ⏰ ⏰ TIMEOUT EN CHANNEL ⏰ ⏰ ⏰\n');
-          } else if (status == RealtimeSubscribeStatus.closed) {
-            print('🔒 🔒 🔒 CHANNEL CERRADO 🔒 🔒 🔒\n');
+            if (status == RealtimeSubscribeStatus.subscribed) {
+              print('✅ ✅ ✅ CHANNEL CONECTADO EXITOSAMENTE ✅ ✅ ✅\n');
+            } else if (status == RealtimeSubscribeStatus.channelError) {
+              print('❌ ❌ ❌ ERROR EN CHANNEL: $error ❌ ❌ ❌\n');
+            } else if (status == RealtimeSubscribeStatus.timedOut) {
+              print('⏰ ⏰ ⏰ TIMEOUT EN CHANNEL ⏰ ⏰ ⏰\n');
+            } else if (status == RealtimeSubscribeStatus.closed) {
+              print('🔒 🔒 🔒 CHANNEL CERRADO 🔒 🔒 🔒\n');
+            }
           }
         });
 
-    print('✅ Channel suscrito exitosamente');
-    print('   Esperando eventos INSERT, UPDATE, DELETE...');
+    if (_debug) {
+      print('✅ Channel suscrito exitosamente');
+      print('   Esperando eventos INSERT, UPDATE, DELETE...');
+    }
 
     return controller.stream;
   }

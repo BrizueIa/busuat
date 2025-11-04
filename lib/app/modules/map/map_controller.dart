@@ -25,6 +25,9 @@ class MapController extends GetxController {
   // Mínimo de usuarios requeridos para mostrar el bus en el mapa
   static const int MIN_USERS_TO_SHOW_BUS = 1;
 
+  // Control de logging (false en producción para mejor rendimiento)
+  static const bool ENABLE_DEBUG_LOGS = false;
+
   // Estilo personalizado del mapa
   static const String mapStyle = '''
     [
@@ -492,16 +495,30 @@ class MapController extends GetxController {
     }
 
     // Agrega marcador del autobús si está disponible y tiene usuarios
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    print('🔍 EVALUANDO SI MOSTRAR EL BUS:');
+    print('   busLocation.value != null: ${busLocation.value != null}');
+
+    if (busLocation.value != null) {
+      print('   busLocation.value!.isActive: ${busLocation.value!.isActive}');
+      print('   busLocation.value!.userCount: ${busLocation.value!.userCount}');
+      print('   MIN_USERS_TO_SHOW_BUS: $MIN_USERS_TO_SHOW_BUS');
+      print(
+        '   userCount >= MIN_USERS_TO_SHOW_BUS: ${busLocation.value!.userCount >= MIN_USERS_TO_SHOW_BUS}',
+      );
+    }
+
     final shouldShowBus =
         busLocation.value != null &&
         busLocation.value!.isActive &&
         busLocation.value!.userCount >= MIN_USERS_TO_SHOW_BUS;
 
+    print('   RESULTADO: shouldShowBus = $shouldShowBus');
+
     if (shouldShowBus) {
-      print('🚌 Mostrando marcador del bus:');
-      print('   - userCount: ${busLocation.value!.userCount}');
-      print('   - MIN_USERS_TO_SHOW_BUS: $MIN_USERS_TO_SHOW_BUS');
-      print('   - isActive: ${busLocation.value!.isActive}');
+      print(
+        '✅ ✅ ✅ MOSTRANDO MARCADOR DEL BUS EN POSICIÓN: ${busLocation.value!.position}',
+      );
 
       final busMarker = Marker(
         markerId: const MarkerId('bus'),
@@ -516,15 +533,13 @@ class MapController extends GetxController {
       );
 
       newMarkers.add(busMarker);
-    } else if (busLocation.value != null) {
-      print('❌ Bus NO visible:');
-      print('   - userCount: ${busLocation.value!.userCount}');
-      print('   - MIN_USERS_TO_SHOW_BUS: $MIN_USERS_TO_SHOW_BUS');
-      print('   - isActive: ${busLocation.value!.isActive}');
       print(
-        '   - Condición: ${busLocation.value!.userCount} >= $MIN_USERS_TO_SHOW_BUS = ${busLocation.value!.userCount >= MIN_USERS_TO_SHOW_BUS}',
+        '✅ Marcador del bus agregado a newMarkers (total: ${newMarkers.length})',
       );
+    } else {
+      print('❌ NO SE MUESTRA EL BUS (condiciones no cumplidas)');
     }
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     markers.assignAll(newMarkers);
   }
@@ -554,7 +569,7 @@ class MapController extends GetxController {
               }
 
               if (shouldUpdate) {
-                print('📍 Bus moved: $newPosition');
+                if (ENABLE_DEBUG_LOGS) print('📍 Bus moved: $newPosition');
                 _lastBusPosition = newPosition;
                 busLocation.value = location;
                 _updateMarkers();
@@ -574,12 +589,14 @@ class MapController extends GetxController {
   Future<void> toggleInBus() async {
     // ✅ Prevenir múltiples llamadas simultáneas
     if (_isTogglingBus) {
-      print('⚠️ toggleInBus ya está en ejecución, ignorando llamada...');
+      if (ENABLE_DEBUG_LOGS) {
+        print('⚠️ toggleInBus ya está en ejecución, ignorando llamada...');
+      }
       return;
     }
 
     _isTogglingBus = true;
-    print('🔒 Lock activado para toggleInBus');
+    if (ENABLE_DEBUG_LOGS) print('🔒 Lock activado para toggleInBus');
 
     try {
       if (!hasLocationPermission.value) {
@@ -600,19 +617,21 @@ class MapController extends GetxController {
       }
     } finally {
       _isTogglingBus = false;
-      print('🔓 Lock liberado para toggleInBus');
+      if (ENABLE_DEBUG_LOGS) print('🔓 Lock liberado para toggleInBus');
     }
   }
 
   Future<void> _startReportingLocation() async {
     try {
-      print('🚀 Iniciando reporte de ubicación...');
+      if (ENABLE_DEBUG_LOGS) print('🚀 Iniciando reporte de ubicación...');
 
       // Obtener o crear un usuario anónimo
       String? tempUserId = _supabase.auth.currentUser?.id;
 
       if (tempUserId == null) {
-        print('⚠️ No hay usuario actual, creando sesión anónima...');
+        if (ENABLE_DEBUG_LOGS) {
+          print('⚠️ No hay usuario actual, creando sesión anónima...');
+        }
         // Crear sesión anónima
         final response = await _supabase.auth.signInAnonymously();
         tempUserId = response.user?.id;
@@ -628,15 +647,17 @@ class MapController extends GetxController {
           return;
         }
 
-        print('✅ Usuario anónimo creado: $tempUserId');
+        if (ENABLE_DEBUG_LOGS) print('✅ Usuario anónimo creado: $tempUserId');
       } else {
-        print('✅ Usuario existente encontrado: $tempUserId');
+        if (ENABLE_DEBUG_LOGS) {
+          print('✅ Usuario existente encontrado: $tempUserId');
+        }
       }
 
       // Ahora userId es definitivamente no-null
       final String userId = tempUserId;
 
-      print('📍 Obteniendo ubicación actual...');
+      if (ENABLE_DEBUG_LOGS) print('📍 Obteniendo ubicación actual...');
       final location = await _locationService.getCurrentLocation();
       if (location == null) {
         print('❌ Error: No se pudo obtener ubicación');
@@ -649,8 +670,10 @@ class MapController extends GetxController {
         return;
       }
 
-      print('✅ Ubicación obtenida: $location');
-      print('🔄 Llamando a BusTrackingService...');
+      if (ENABLE_DEBUG_LOGS) {
+        print('✅ Ubicación obtenida: $location');
+        print('🔄 Llamando a BusTrackingService...');
+      }
 
       final success = await _busTrackingService.reportUserInBus(
         userId, // Ahora es String no-nullable
@@ -658,17 +681,21 @@ class MapController extends GetxController {
         0.0,
       );
 
-      print('📊 Resultado de reportUserInBus: $success');
+      if (ENABLE_DEBUG_LOGS) {
+        print('📊 Resultado de reportUserInBus: $success');
+      }
 
       if (success) {
         isInBus.value = true;
 
-        print('🎧 Iniciando stream de ubicación...');
+        if (ENABLE_DEBUG_LOGS) print('🎧 Iniciando stream de ubicación...');
         _locationSubscription = _locationService.getLocationStream().listen((
           position,
         ) async {
           final newLocation = LatLng(position.latitude, position.longitude);
-          print('📍 Nueva ubicación detectada: $newLocation');
+          if (ENABLE_DEBUG_LOGS) {
+            print('📍 Nueva ubicación detectada: $newLocation');
+          }
           await _busTrackingService.reportUserInBus(
             userId, // String no-nullable
             newLocation,
@@ -685,7 +712,9 @@ class MapController extends GetxController {
           colorText: Colors.white,
         );
       } else {
-        print('❌ Error: reportUserInBus retornó false');
+        if (ENABLE_DEBUG_LOGS) {
+          print('❌ Error: reportUserInBus retornó false');
+        }
         Get.snackbar(
           'Error',
           'No se pudo reportar tu ubicación al servidor',
@@ -695,7 +724,7 @@ class MapController extends GetxController {
       }
     } catch (e) {
       print('❌ ERROR CRÍTICO iniciando reporte de ubicación: $e');
-      print('   Stack trace: ${StackTrace.current}');
+      if (ENABLE_DEBUG_LOGS) print('   Stack trace: ${StackTrace.current}');
       Get.snackbar(
         'Error',
         'No se pudo iniciar el reporte de ubicación',

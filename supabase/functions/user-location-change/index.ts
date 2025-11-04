@@ -78,13 +78,17 @@ serve(async (req) => {
 
     const nearbyCount = count ?? 0;
 
+    // 3) user_count debe ser igual a nearbyCount (usuarios cercanos, no globales)
+    // ✅ FIX: Usar conteo de proximidad en lugar de conteo global
+    const userCount = nearbyCount;
+
     // ✅ Si hay usuarios cercanos, crear/actualizar el bus
     if (nearbyCount >= 1) {
       const busData = {
         bus_number: 1,
         lat: lat,
         lng: lng,
-        // ✅ No incluir user_count si la columna no existe
+        user_count: userCount, // ✅ Total de usuarios activos en el bus
       };
 
       const { error: upsertError } = await supabase
@@ -96,7 +100,7 @@ serve(async (req) => {
       if (upsertError) {
         console.error("Buses upsert error:", upsertError);
       } else {
-        console.log(`Bus 1 updated at (${lat}, ${lng}) with ${nearbyCount} users`);
+        console.log(`Bus 1 updated at (${lat}, ${lng}) with ${nearbyCount} nearby, ${userCount} total active users`);
       }
     } else {
       // ✅ Si no hay usuarios cercanos, eliminar el bus
@@ -112,11 +116,11 @@ serve(async (req) => {
       }
     }
 
-    // ✅ Respuesta simple - Realtime se encarga del resto
+    // ✅ Respuesta con nearby_count y user_count
     return new Response(
       JSON.stringify({
-        success: true,
         nearby_count: nearbyCount,
+        user_count: userCount, // ✅ Total de usuarios activos
       }),
       {
         status: 200,
