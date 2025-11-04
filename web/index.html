@@ -35,6 +35,32 @@
   <!-- Google Maps JavaScript API -->
   <!-- IMPORTANTE: Reemplaza TU_API_KEY con tu API key de Google Maps -->
   <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBEvUjbuOEHTJABF3_pBvg5h72UUMvtBYw&loading=async"></script>
+
+  <style>
+    /* Ocultar TODOS los controles de Google Maps en Flutter Web */
+    /* Esto incluye: zoom, street view, fullscreen, map type, etc. */
+    .gm-style button,
+    .gm-style-mtc,
+    .gm-svpc,
+    .gm-control-active,
+    .gmnoprint,
+    .gm-bundled-control,
+    .gm-fullscreen-control {
+      display: none !important;
+    }
+
+    /* Ocultar el botón de recenter/fullscreen específicamente */
+    button[title="Toggle fullscreen view"],
+    button[title="Alternar vista de pantalla completa"],
+    .gm-control-active.gm-fullscreen-control {
+      display: none !important;
+    }
+
+    /* Asegurar que el mapa ocupe todo el espacio */
+    .gm-style {
+      font: inherit !important;
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
