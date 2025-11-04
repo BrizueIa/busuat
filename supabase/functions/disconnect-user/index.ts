@@ -93,6 +93,8 @@ serve(async (req) => {
     // ✅ FIX: Usar conteo de proximidad, no conteo global
     // El RPC ya nos dio el nearby_count, pero necesitamos recalcularlo
     // porque el usuario actual ya fue desconectado
+    console.log(`🔍 Verificando usuarios cercanos al usuario ${user_id} después de desconectar...`);
+    
     const { data: nearbyUsersData, error: nearbyError } = await supabase.rpc("nearby_count_for", {
       p_user_id: user_id,  // Aunque esté desconectado, usar su última posición
       p_radius_m: radius_meters || 50
@@ -104,6 +106,15 @@ serve(async (req) => {
 
     // El conteo de usuarios cercanos (sin incluir al que se desconectó)
     const userCount = nearbyUsersData ?? 0;
+    console.log(`📊 nearby_count_for retornó: ${userCount} usuarios cercanos activos`);
+    
+    // Debug: Verificar cuántos usuarios activos hay en total
+    const { count: totalActiveCount, error: totalError } = await supabase
+      .from("user_locations")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true);
+    
+    console.log(`📊 Total de usuarios activos globalmente: ${totalActiveCount ?? 0}`);
 
     // 3) Actualizar user_count en la tabla buses o eliminar el bus
     if (userCount > 0) {

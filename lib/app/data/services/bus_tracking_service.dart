@@ -77,24 +77,21 @@ class BusTrackingService {
   /// Elimina el reporte del usuario llamando a la Edge Function
   Future<bool> removeUserFromBus(String userId) async {
     try {
-      if (_debug) {
-        print('🔵 Llamando a Edge Function disconnect-user...');
-        print('   User ID: $userId');
-      }
+      print('🔵 Llamando a Edge Function disconnect-user...');
+      print('   User ID: $userId');
 
       final response = await _supabase.functions.invoke(
         'disconnect-user',
         body: {'user_id': userId, 'radius_meters': 50},
       );
 
-      if (_debug) {
-        print('📥 Respuesta recibida:');
-        print('   Status: ${response.status}');
-        print('   Data: ${response.data}');
-      }
+      print('📥 RESPUESTA DE disconnect-user:');
+      print('   Status: ${response.status}');
+      print('   Data: ${response.data}');
 
       if (response.status == 200 || response.status == 404) {
-        if (_debug) print('✅ Usuario desconectado correctamente');
+        print('✅ Usuario desconectado correctamente');
+        print('⏳ Esperando evento DELETE de Realtime...');
         return true;
       }
 
@@ -119,28 +116,41 @@ class BusTrackingService {
     final controller = StreamController<BusLocation?>.broadcast();
 
     // ✅ SINTAXIS CORRECTA para supabase_flutter v2.9.1
+    // ⚠️ SIN FILTRO porque en DELETE solo viene el ID, no el bus_number
     _realtimeChannel = _supabase
         .channel('public:buses')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'buses',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'bus_number',
-            value: BUS_NUMBER,
-          ),
+          // ❌ NO FILTRAR por bus_number porque DELETE solo trae {id: X}
+          // Si filtramos por bus_number, los DELETE no pasan el filtro
           callback: (payload) {
+            print('📡 REALTIME CALLBACK EJECUTADO');
+            print('   eventType: ${payload.eventType}');
+            print('   oldRecord: ${payload.oldRecord}');
+            print('   newRecord: ${payload.newRecord}');
+
             if (payload.eventType == PostgresChangeEvent.delete) {
+              print('🗑️ DELETE EVENT DETECTADO - Enviando null al stream');
               controller.add(null);
               return;
             }
 
-            // ✅ Para INSERT/UPDATE
+            // ✅ Para INSERT/UPDATE, verificar que sea el bus correcto
             final busData = payload.newRecord;
 
             if (busData.isEmpty) {
               controller.add(null);
+              return;
+            }
+
+            // ✅ Verificar que sea el bus número 1 (ya que quitamos el filtro)
+            final busNumber = busData['bus_number'] as int?;
+            if (busNumber != BUS_NUMBER) {
+              print(
+                '⚠️ Evento ignorado: bus_number=$busNumber (esperado: $BUS_NUMBER)',
+              );
               return;
             }
 

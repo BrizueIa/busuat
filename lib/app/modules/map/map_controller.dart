@@ -546,44 +546,48 @@ class MapController extends GetxController {
 
   void _subscribeToBusLocation() {
     _busLocationSubscription?.cancel();
-    _busLocationSubscription = _busTrackingService
-        .getBusLocationStream()
-        .listen(
-          (location) {
-            if (location != null) {
-              final newPosition = location.position;
-              bool shouldUpdate = false;
-
-              if (_lastBusPosition == null) {
-                shouldUpdate = true;
-              } else {
-                final latDiff =
-                    (_lastBusPosition!.latitude - newPosition.latitude).abs();
-                final lngDiff =
-                    (_lastBusPosition!.longitude - newPosition.longitude).abs();
-
-                // 0.00005 grados ≈ 5 metros
-                if (latDiff > 0.00005 || lngDiff > 0.00005) {
-                  shouldUpdate = true;
-                }
-              }
-
-              if (shouldUpdate) {
-                if (ENABLE_DEBUG_LOGS) print('📍 Bus moved: $newPosition');
-                _lastBusPosition = newPosition;
-                busLocation.value = location;
-                _updateMarkers();
-              }
-            } else {
-              _lastBusPosition = null;
-              busLocation.value = null;
-              _updateMarkers();
-            }
-          },
-          onError: (error, stackTrace) {
-            print('❌ Realtime error: $error');
-          },
+    _busLocationSubscription = _busTrackingService.getBusLocationStream().listen(
+      (location) {
+        print('🎯 STREAM LISTENER RECIBIÓ UPDATE:');
+        print(
+          '   location: ${location != null ? "BusLocation(${location.position}, count=${location.userCount}, active=${location.isActive})" : "NULL"}',
         );
+
+        if (location != null) {
+          final newPosition = location.position;
+          bool shouldUpdate = false;
+
+          if (_lastBusPosition == null) {
+            shouldUpdate = true;
+          } else {
+            final latDiff = (_lastBusPosition!.latitude - newPosition.latitude)
+                .abs();
+            final lngDiff =
+                (_lastBusPosition!.longitude - newPosition.longitude).abs();
+
+            // 0.00005 grados ≈ 5 metros
+            if (latDiff > 0.00005 || lngDiff > 0.00005) {
+              shouldUpdate = true;
+            }
+          }
+
+          if (shouldUpdate) {
+            if (ENABLE_DEBUG_LOGS) print('📍 Bus moved: $newPosition');
+            _lastBusPosition = newPosition;
+            busLocation.value = location;
+            _updateMarkers();
+          }
+        } else {
+          print('🗑️ LOCATION ES NULL - Limpiando marcador del bus');
+          _lastBusPosition = null;
+          busLocation.value = null;
+          _updateMarkers();
+        }
+      },
+      onError: (error, stackTrace) {
+        print('❌ Realtime error: $error');
+      },
+    );
   }
 
   Future<void> toggleInBus() async {
@@ -736,16 +740,25 @@ class MapController extends GetxController {
 
   Future<void> _stopReportingLocation() async {
     try {
+      print('🔴🔴🔴 INICIANDO PROCESO DE DESCONEXIÓN 🔴🔴🔴');
       final userId = _supabase.auth.currentUser?.id;
+      print('   User ID: $userId');
+
       if (userId != null) {
+        print('   Llamando a removeUserFromBus...');
         await _busTrackingService.removeUserFromBus(userId);
+        print('   ✅ removeUserFromBus completado');
       }
 
+      print('   Cancelando locationSubscription...');
       _locationSubscription?.cancel();
       _locationSubscription = null;
+
+      print('   Llamando a stopTracking...');
       _busTrackingService.stopTracking();
 
       isInBus.value = false;
+      print('🔴🔴🔴 PROCESO DE DESCONEXIÓN COMPLETADO 🔴🔴🔴');
 
       Get.snackbar(
         'Desactivado',
