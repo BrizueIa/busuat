@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/post_model.dart';
@@ -183,5 +184,98 @@ class MarketplaceController extends GetxController {
   // Refrescar posts (pull to refresh)
   Future<void> refreshPosts() async {
     await loadPosts();
+  }
+
+  // Obtener posts del usuario actual
+  List<PostModel> get myPosts {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return [];
+    return posts.where((post) => post.userId == user.id).toList();
+  }
+
+  // Navegar a editar post
+  void goToEditPost(PostModel post) {
+    final user = _supabase.auth.currentUser;
+    if (user == null || post.userId != user.id) {
+      Get.snackbar(
+        'Error',
+        'No tienes permiso para editar esta publicación',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+    Get.toNamed('/edit-post', arguments: post);
+  }
+
+  // Eliminar post con confirmación
+  void deletePostWithConfirmation(PostModel post) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Eliminar Publicación'),
+        content: const Text(
+          '¿Estás seguro de que deseas eliminar esta publicación?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              deletePost(post);
+            },
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Actualizar un post
+  Future<void> updatePost(PostModel post) async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null || post.userId != user.id) {
+        Get.snackbar(
+          'Error',
+          'No tienes permiso para editar esta publicación',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      if (post.id == null) {
+        Get.snackbar(
+          'Error',
+          'ID de publicación no válido',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      isLoading.value = true;
+
+      await _postService.updatePost(post.id!, post);
+
+      // Recargar la lista después de actualizar
+      await loadPosts();
+
+      Get.snackbar(
+        'Éxito',
+        'Publicación actualizada correctamente',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+
+      Get.back(); // Volver a la vista anterior
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'No se pudo actualizar la publicación',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 }

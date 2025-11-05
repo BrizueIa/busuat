@@ -11,4 +11,6 @@ abstract class Routes {
   static const HOME = '/home';
   static const MAP = '/map';
   static const CREATE_POST = '/create-post';
+  static const EDIT_POST = '/edit-post';
+  static const MY_POSTS = '/my-posts';
 }
