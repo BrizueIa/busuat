@@ -792,6 +792,9 @@ class MapController extends GetxController {
       _locationSubscription?.cancel();
       _locationSubscription = null;
 
+      print('   Deteniendo location stream...');
+      _locationService.stopLocationStream();
+
       print('   Llamando a stopTracking...');
       _busTrackingService.stopTracking();
 

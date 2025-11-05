@@ -14,6 +14,8 @@ class LocationService {
   }
 
   Stream<Position>? _positionStream;
+  StreamController<Position>? _streamController;
+  StreamSubscription<Position?>? _periodicSubscription;
 
   /// Verifica si los permisos de ubicación están otorgados
   Future<bool> checkPermissions() async {
@@ -74,11 +76,11 @@ class LocationService {
   /// Actualiza cada 2 segundos O cada 5 metros (lo que ocurra primero)
   Stream<Position> getLocationStream() {
     if (_positionStream == null) {
-      // Crear stream personalizado que emite cada 2 segundos
-      final controller = StreamController<Position>();
+      // Crear stream broadcast que permite múltiples listeners
+      _streamController = StreamController<Position>.broadcast();
 
       // Stream periódico cada 2 segundos
-      Stream.periodic(const Duration(seconds: 2))
+      _periodicSubscription = Stream.periodic(const Duration(seconds: 2))
           .asyncMap((_) async {
             try {
               return await Geolocator.getCurrentPosition(
@@ -94,18 +96,31 @@ class LocationService {
           .where((position) => position != null)
           .listen(
             (position) {
-              if (position != null) {
-                controller.add(position);
+              if (position != null && !(_streamController?.isClosed ?? true)) {
+                _streamController!.add(position);
               }
             },
             onError: (error) => print('❌ Error en location stream: $error'),
-            onDone: () => controller.close(),
+            onDone: () => _streamController?.close(),
             cancelOnError: false,
           );
 
-      _positionStream = controller.stream;
+      _positionStream = _streamController!.stream;
     }
     return _positionStream!;
+  }
+
+  /// Detiene el stream de ubicación y libera recursos
+  void stopLocationStream() {
+    print('🛑 Deteniendo location stream...');
+    _periodicSubscription?.cancel();
+    _periodicSubscription = null;
+
+    _streamController?.close();
+    _streamController = null;
+
+    _positionStream = null;
+    print('✅ Location stream detenido y recursos liberados');
   }
 
   /// Calcula la distancia entre dos puntos en metros
