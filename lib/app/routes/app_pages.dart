@@ -14,6 +14,10 @@ import '../modules/home/home_binding.dart';
 import '../modules/home/home_page.dart';
 import '../modules/map/map_binding.dart';
 import '../modules/map/map_page.dart';
+import '../modules/marketplace/marketplace_binding.dart';
+import '../modules/marketplace/create_post_page.dart';
+import '../modules/marketplace/edit_post_page.dart';
+import '../modules/marketplace/my_posts_page.dart';
 
 part 'app_routes.dart';
 
@@ -60,6 +64,21 @@ class AppPages {
       name: Routes.MAP,
       page: () => const MapPage(),
       binding: MapBinding(),
+    ),
+    GetPage(
+      name: Routes.CREATE_POST,
+      page: () => const CreatePostPage(),
+      binding: MarketplaceBinding(),
+    ),
+    GetPage(
+      name: Routes.EDIT_POST,
+      page: () => const EditPostPage(),
+      binding: MarketplaceBinding(),
+    ),
+    GetPage(
+      name: Routes.MY_POSTS,
+      page: () => const MyPostsPage(),
+      binding: MarketplaceBinding(),
     ),
   ];
 }

@@ -5,7 +5,7 @@ import '../../data/repositories/auth_repository.dart';
 class GuestController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
 
-  final RxInt currentIndex = 0.obs; // Inicia en 0 (Mapa)
+  final RxInt currentIndex = 1.obs; // Inicia en 1 (Mapa - centro)
 
   void changeTab(int index) {
     currentIndex.value = index;
