@@ -292,8 +292,8 @@ class MapController extends GetxController {
   /// Crea un marcador genérico para el bus (círculo naranja)
   Future<BitmapDescriptor> _createGenericBusMarker() async {
     final int size = kIsWeb
-        ? 80
-        : 60; // Más grande en web, más pequeño en móvil
+        ? 40
+        : 60; // Más pequeño en web, tamaño normal en móvil
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     final paint = Paint()..isAntiAlias = true;
