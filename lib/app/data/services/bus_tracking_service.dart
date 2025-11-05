@@ -24,6 +24,8 @@ class BusTrackingService {
 
   Timer? _updateTimer;
   RealtimeChannel? _realtimeChannel; // ✅ Para guardar referencia al channel
+  StreamController<BusLocation?>?
+  _busLocationController; // ✅ Singleton stream controller
 
   /// Reporta la ubicación del usuario llamando a la Edge Function
   /// Solo reporta la ubicación, NO retorna las coordenadas del bus
@@ -106,14 +108,24 @@ class BusTrackingService {
 
   /// Stream de actualizaciones de la ubicación del bus desde la tabla 'buses'
   /// ✅ USANDO .channel().onPostgresChanges() (Supabase Flutter v2.9.1)
+  /// ✅ Singleton: Solo se crea una vez y se reutiliza
   Stream<BusLocation?> getBusLocationStream() {
+    // ✅ Si ya existe el stream, retornarlo
+    if (_busLocationController != null) {
+      if (_debug) {
+        print('♻️ Reutilizando stream existente de bus location');
+      }
+      return _busLocationController!.stream;
+    }
+
     if (_debug) {
       print('📡 Iniciando Realtime Channel para tabla buses...');
       print('   Bus number: $BUS_NUMBER');
       print('   Método: .channel().onPostgresChanges() ✅');
     }
 
-    final controller = StreamController<BusLocation?>.broadcast();
+    // ✅ Crear el controller solo una vez
+    _busLocationController = StreamController<BusLocation?>.broadcast();
 
     // ✅ SINTAXIS CORRECTA para supabase_flutter v2.9.1
     // ⚠️ SIN FILTRO porque en DELETE solo viene el ID, no el bus_number
@@ -133,7 +145,7 @@ class BusTrackingService {
 
             if (payload.eventType == PostgresChangeEvent.delete) {
               print('🗑️ DELETE EVENT DETECTADO - Enviando null al stream');
-              controller.add(null);
+              _busLocationController!.add(null);
               return;
             }
 
@@ -141,7 +153,7 @@ class BusTrackingService {
             final busData = payload.newRecord;
 
             if (busData.isEmpty) {
-              controller.add(null);
+              _busLocationController!.add(null);
               return;
             }
 
@@ -189,13 +201,13 @@ class BusTrackingService {
               print('   isActive: ${busLocation.isActive}');
 
               // ✅ Agregar al stream
-              controller.add(busLocation);
+              _busLocationController!.add(busLocation);
               print('✅ BusLocation agregado al stream controller\n');
             } catch (e, stackTrace) {
               print('❌ ERROR PARSEANDO: $e');
               if (_debug) print('   Stack: $stackTrace');
 
-              controller.add(null);
+              _busLocationController!.add(null);
             }
           },
         )
@@ -223,7 +235,7 @@ class BusTrackingService {
       print('   Esperando eventos INSERT, UPDATE, DELETE...');
     }
 
-    return controller.stream;
+    return _busLocationController!.stream;
   }
 
   /// Inicia el monitoreo automático del bus (envía actualizaciones periódicas)
@@ -243,6 +255,13 @@ class BusTrackingService {
   void dispose() {
     print('🧹 Limpiando BusTrackingService...');
     _updateTimer?.cancel();
+
+    // ✅ Cerrar el stream controller
+    if (_busLocationController != null) {
+      print('   Cerrando stream controller...');
+      _busLocationController!.close();
+      _busLocationController = null;
+    }
 
     // ✅ Remover el channel de Realtime
     if (_realtimeChannel != null) {

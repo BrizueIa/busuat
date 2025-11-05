@@ -123,6 +123,9 @@ class MapController extends GetxController {
   // Lock para evitar múltiples llamadas simultáneas
   bool _isTogglingBus = false;
 
+  // Bandera para controlar si se están enviando ubicaciones activamente
+  bool _isReportingActive = false;
+
   // Markers
   final markers = <Marker>{}.obs;
   final RxList<PointOfInterest> pointsOfInterest = <PointOfInterest>[].obs;
@@ -289,33 +292,71 @@ class MapController extends GetxController {
     }
   }
 
-  /// Crea un marcador genérico para el bus (círculo naranja)
+  /// Crea un marcador de ícono de bus en una burbuja estilo marker
   Future<BitmapDescriptor> _createGenericBusMarker() async {
-    final int size = kIsWeb
-        ? 40
-        : 60; // Más pequeño en web, tamaño normal en móvil
+    final int size = kIsWeb ? 50 : 90;
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     final paint = Paint()..isAntiAlias = true;
 
-    final center = Offset(size / 2, size / 2);
-    final radius = size / 2.5;
+    final center = Offset(size / 2, size / 2.2);
+    final bubbleRadius = size / 2.5;
 
     // 1. Dibujar sombra
     paint.color = Colors.black.withOpacity(0.3);
-    canvas.drawCircle(Offset(center.dx, center.dy + 2), radius, paint);
+    paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    canvas.drawCircle(Offset(center.dx, center.dy + 3), bubbleRadius, paint);
+    paint.maskFilter = null;
 
-    // 2. Dibujar círculo naranja
-    paint.color = Colors.orange;
-    canvas.drawCircle(center, radius, paint);
-
-    // 3. Dibujar borde blanco
+    // 2. Dibujar círculo blanco (fondo de la burbuja)
     paint.color = Colors.white;
-    paint.style = PaintingStyle.stroke;
-    paint.strokeWidth = 3;
-    canvas.drawCircle(center, radius, paint);
+    canvas.drawCircle(center, bubbleRadius, paint);
 
-    // 4. Convertir a imagen
+    // 3. Dibujar borde negro
+    paint.color = Colors.black;
+    paint.style = PaintingStyle.stroke;
+    paint.strokeWidth = 2;
+    canvas.drawCircle(center, bubbleRadius, paint);
+
+    // 4. Dibujar el pico del marcador
+    paint.style = PaintingStyle.fill;
+    paint.color = Colors.white;
+    final pikePath = Path();
+    final pikeBottom = Offset(center.dx, size - 5);
+    final pikeLeft = Offset(center.dx - 6, center.dy + bubbleRadius - 2);
+    final pikeRight = Offset(center.dx + 6, center.dy + bubbleRadius - 2);
+    pikePath.moveTo(pikeBottom.dx, pikeBottom.dy);
+    pikePath.lineTo(pikeLeft.dx, pikeLeft.dy);
+    pikePath.lineTo(pikeRight.dx, pikeRight.dy);
+    pikePath.close();
+    canvas.drawPath(pikePath, paint);
+
+    // Borde del pico
+    paint.color = Colors.black;
+    paint.style = PaintingStyle.stroke;
+    paint.strokeWidth = 2;
+    canvas.drawPath(pikePath, paint);
+
+    // 5. Dibujar el ícono de bus
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    textPainter.text = TextSpan(
+      text: String.fromCharCode(Icons.directions_bus.codePoint),
+      style: TextStyle(
+        fontSize: bubbleRadius * 1.3,
+        fontFamily: Icons.directions_bus.fontFamily,
+        color: Colors.orange,
+      ),
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        center.dx - textPainter.width / 2,
+        center.dy - textPainter.height / 2,
+      ),
+    );
+
+    // Convertir a imagen
     final picture = recorder.endRecording();
     final img = await picture.toImage(size, size);
     final ByteData? byteData = await img.toByteData(
@@ -691,11 +732,19 @@ class MapController extends GetxController {
 
       if (success) {
         isInBus.value = true;
+        _isReportingActive = true; // Activar bandera
 
         if (ENABLE_DEBUG_LOGS) print('🎧 Iniciando stream de ubicación...');
         _locationSubscription = _locationService.getLocationStream().listen((
           position,
         ) async {
+          // Verificar que sigue activo antes de reportar
+          if (!_isReportingActive) {
+            if (ENABLE_DEBUG_LOGS)
+              print('⏹️ Reporte inactivo - ignorando ubicación');
+            return;
+          }
+
           final newLocation = LatLng(position.latitude, position.longitude);
           if (ENABLE_DEBUG_LOGS) {
             print('📍 Nueva ubicación detectada: $newLocation');
@@ -744,16 +793,31 @@ class MapController extends GetxController {
       final userId = _supabase.auth.currentUser?.id;
       print('   User ID: $userId');
 
+      // PASO 1: Desactivar bandera INMEDIATAMENTE para prevenir nuevos reportes
+      print('   ⏹️ Desactivando bandera de reporte...');
+      _isReportingActive = false;
+
+      // PASO 2: Cancelar suscripción (esto detiene el listener)
+      print('   Cancelando locationSubscription...');
+      _locationSubscription?.cancel();
+      _locationSubscription = null;
+
+      // PASO 3: Detener el stream periódico
+      print('   Deteniendo location stream...');
+      _locationService.stopLocationStream();
+
+      // PASO 4: Pequeña espera para que cualquier llamada pendiente termine
+      print('   ⏳ Esperando llamadas pendientes...');
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // PASO 5: Ahora sí, desconectar del servidor
       if (userId != null) {
         print('   Llamando a removeUserFromBus...');
         await _busTrackingService.removeUserFromBus(userId);
         print('   ✅ removeUserFromBus completado');
       }
 
-      print('   Cancelando locationSubscription...');
-      _locationSubscription?.cancel();
-      _locationSubscription = null;
-
+      // PASO 6: Detener tracking de Realtime
       print('   Llamando a stopTracking...');
       _busTrackingService.stopTracking();
 

@@ -89,26 +89,23 @@ serve(async (req) => {
       );
     }
 
-    // 2) Contar usuarios activos CERCANOS restantes (no globales)
-    // ✅ FIX: Usar conteo de proximidad, no conteo global
-    // El RPC ya nos dio el nearby_count, pero necesitamos recalcularlo
-    // porque el usuario actual ya fue desconectado
-    console.log(`🔍 Verificando usuarios cercanos al usuario ${user_id} después de desconectar...`);
+    // 2) Eliminar el bus de la tabla buses
+    // ✅ SOLO eliminar el bus, NO recrearlo
+    // La lógica de recrear/actualizar el bus está en user-location-change
+    console.log(`🗑️ Eliminando bus después de desconectar usuario ${user_id}...`);
     
-    const { data: nearbyUsersData, error: nearbyError } = await supabase.rpc("nearby_count_for", {
-      p_user_id: user_id,  // Aunque esté desconectado, usar su última posición
-      p_radius_m: radius_meters || 50
-    });
+    const { error: deleteError } = await supabase
+      .from("buses")
+      .delete()
+      .eq("bus_number", 1);
 
-    if (nearbyError) {
-      console.error("Nearby count error:", nearbyError);
+    if (deleteError) {
+      console.error("Bus delete error:", deleteError);
+    } else {
+      console.log("✅ Bus eliminado correctamente (usuario desconectado)");
     }
-
-    // El conteo de usuarios cercanos (sin incluir al que se desconectó)
-    const userCount = nearbyUsersData ?? 0;
-    console.log(`📊 nearby_count_for retornó: ${userCount} usuarios cercanos activos`);
     
-    // Debug: Verificar cuántos usuarios activos hay en total
+    // Contar usuarios activos globalmente (solo para debug/respuesta)
     const { count: totalActiveCount, error: totalError } = await supabase
       .from("user_locations")
       .select("*", { count: "exact", head: true })
@@ -116,53 +113,11 @@ serve(async (req) => {
     
     console.log(`📊 Total de usuarios activos globalmente: ${totalActiveCount ?? 0}`);
 
-    // 3) Actualizar user_count en la tabla buses o eliminar el bus
-    if (userCount > 0) {
-      // Obtener la última posición de un usuario activo
-      const { data: activeUser, error: activeUserError } = await supabase
-        .from("user_locations")
-        .select("lat, lng")
-        .eq("is_active", true)
-        .limit(1)
-        .single();
-
-      if (!activeUserError && activeUser) {
-        const { error: busUpdateError } = await supabase
-          .from("buses")
-          .upsert({
-            bus_number: 1,
-            lat: activeUser.lat,
-            lng: activeUser.lng,
-            user_count: userCount,
-          }, {
-            onConflict: "bus_number",
-          });
-
-        if (busUpdateError) {
-          console.error("Bus update error:", busUpdateError);
-        } else {
-          console.log(`Bus 1 updated: ${userCount} active users after disconnect`);
-        }
-      }
-    } else {
-      // No quedan usuarios activos, eliminar el bus
-      const { error: deleteError } = await supabase
-        .from("buses")
-        .delete()
-        .eq("bus_number", 1);
-
-      if (deleteError) {
-        console.error("Bus delete error:", deleteError);
-      } else {
-        console.log("Bus 1 removed (no active users remaining)");
-      }
-    }
-
-    // ✅ Respuesta exitosa con datos del RPC + user_count actualizado
+    // ✅ Respuesta exitosa con datos del RPC + user_count = 0 (usuario desconectado)
     return new Response(
       JSON.stringify({
         ...rpcData,
-        user_count: userCount,
+        user_count: 0, // ✅ Usuario fue desconectado, ya no está activo
       }),
       {
         status: 200,
