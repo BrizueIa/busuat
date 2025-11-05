@@ -123,6 +123,9 @@ class MapController extends GetxController {
   // Lock para evitar múltiples llamadas simultáneas
   bool _isTogglingBus = false;
 
+  // Bandera para controlar si se están enviando ubicaciones activamente
+  bool _isReportingActive = false;
+
   // Markers
   final markers = <Marker>{}.obs;
   final RxList<PointOfInterest> pointsOfInterest = <PointOfInterest>[].obs;
@@ -729,11 +732,19 @@ class MapController extends GetxController {
 
       if (success) {
         isInBus.value = true;
+        _isReportingActive = true; // Activar bandera
 
         if (ENABLE_DEBUG_LOGS) print('🎧 Iniciando stream de ubicación...');
         _locationSubscription = _locationService.getLocationStream().listen((
           position,
         ) async {
+          // Verificar que sigue activo antes de reportar
+          if (!_isReportingActive) {
+            if (ENABLE_DEBUG_LOGS)
+              print('⏹️ Reporte inactivo - ignorando ubicación');
+            return;
+          }
+
           final newLocation = LatLng(position.latitude, position.longitude);
           if (ENABLE_DEBUG_LOGS) {
             print('📍 Nueva ubicación detectada: $newLocation');
@@ -782,19 +793,31 @@ class MapController extends GetxController {
       final userId = _supabase.auth.currentUser?.id;
       print('   User ID: $userId');
 
+      // PASO 1: Desactivar bandera INMEDIATAMENTE para prevenir nuevos reportes
+      print('   ⏹️ Desactivando bandera de reporte...');
+      _isReportingActive = false;
+
+      // PASO 2: Cancelar suscripción (esto detiene el listener)
+      print('   Cancelando locationSubscription...');
+      _locationSubscription?.cancel();
+      _locationSubscription = null;
+
+      // PASO 3: Detener el stream periódico
+      print('   Deteniendo location stream...');
+      _locationService.stopLocationStream();
+
+      // PASO 4: Pequeña espera para que cualquier llamada pendiente termine
+      print('   ⏳ Esperando llamadas pendientes...');
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // PASO 5: Ahora sí, desconectar del servidor
       if (userId != null) {
         print('   Llamando a removeUserFromBus...');
         await _busTrackingService.removeUserFromBus(userId);
         print('   ✅ removeUserFromBus completado');
       }
 
-      print('   Cancelando locationSubscription...');
-      _locationSubscription?.cancel();
-      _locationSubscription = null;
-
-      print('   Deteniendo location stream...');
-      _locationService.stopLocationStream();
-
+      // PASO 6: Detener tracking de Realtime
       print('   Llamando a stopTracking...');
       _busTrackingService.stopTracking();
 
