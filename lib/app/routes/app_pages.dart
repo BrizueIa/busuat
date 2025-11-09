@@ -1,3 +1,4 @@
+import 'package:busuat/app/modules/agenda/agenda_page.dart';
 import 'package:get/get.dart';
 import '../core/middlewares/auth_middleware.dart';
 import '../modules/login/login_binding.dart';
@@ -14,6 +15,7 @@ import '../modules/home/home_binding.dart';
 import '../modules/home/home_page.dart';
 import '../modules/map/map_binding.dart';
 import '../modules/map/map_page.dart';
+import '../modules/agenda/agenda_binding.dart';
 
 part 'app_routes.dart';
 
@@ -60,6 +62,11 @@ class AppPages {
       name: Routes.MAP,
       page: () => const MapPage(),
       binding: MapBinding(),
+    ),
+    GetPage(
+      name: Routes.AGENDA,
+      page: () => const AgendaPage(),
+      binding: AgendaBinding(),
     ),
   ];
 }

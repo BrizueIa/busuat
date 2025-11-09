@@ -1,3 +1,4 @@
+import 'package:busuat/app/modules/agenda/agenda_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'home_controller.dart';
@@ -14,7 +15,12 @@ class HomePage extends GetView<HomeController> {
       () => Scaffold(
         body: IndexedStack(
           index: controller.currentIndex.value,
-          children: const [MarketplaceView(), MapView(), ProfileView()],
+          children: const [
+            MarketplaceView(),
+            AgendaPage(),
+            MapView(),
+            ProfileView(),
+          ],
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: controller.currentIndex.value,
@@ -25,6 +31,10 @@ class HomePage extends GetView<HomeController> {
             BottomNavigationBarItem(
               icon: Icon(Icons.store),
               label: 'Marketplace',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_month),
+              label: 'Agenda',
             ),
             BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Mapa'),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),

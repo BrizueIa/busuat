@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'app/core/config/supabase_config.dart';
 import 'app/routes/app_pages.dart';
 
@@ -54,6 +55,16 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
+
+      // localizacion para pickers y widgets del sistema (Agenda)
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      // Español por defecto (Agenda)
+      supportedLocales: const [Locale('es', 'ES'), Locale('en', 'US')],
+      locale: const Locale('es', 'ES'),
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
     );

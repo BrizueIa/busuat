@@ -10,4 +10,5 @@ abstract class Routes {
   static const GUEST = '/guest';
   static const HOME = '/home';
   static const MAP = '/map';
+  static const AGENDA = '/agenda';
 }

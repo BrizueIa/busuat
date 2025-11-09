@@ -5,7 +5,7 @@ import '../../data/models/user_model.dart';
 class HomeController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
 
-  final RxInt currentIndex = 1.obs; // Inicia en 1 (Mapa - centro)
+  final RxInt currentIndex = 2.obs; // Inicia en 2 (Mapa - centro)
   Rx<UserModel?> currentUser = Rx<UserModel?>(null);
 
   @override
