@@ -19,6 +19,15 @@ class MarketplaceView extends StatelessWidget {
         title: const Text('Marketplace'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
+        actions: [
+          // Botón de verificación visible solo para estudiantes
+          if (controller.isStudent)
+            IconButton(
+              icon: const Icon(Icons.verified_user),
+              tooltip: 'Verificación de vendedor',
+              onPressed: controller.goToVerification,
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(50),
           child: Container(

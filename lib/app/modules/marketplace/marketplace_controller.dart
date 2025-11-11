@@ -3,10 +3,13 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/post_model.dart';
 import '../../data/services/post_service.dart';
+import '../../data/services/verification_service.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../routes/app_pages.dart';
 
 class MarketplaceController extends GetxController {
   final PostService _postService = PostService();
+  final VerificationService _verificationService = VerificationService();
   final AuthRepository _authRepository = AuthRepository();
   final _supabase = Supabase.instance.client;
 
@@ -36,6 +39,24 @@ class MarketplaceController extends GetxController {
   bool get isStudent {
     final currentUser = _authRepository.getCurrentUser();
     return currentUser != null && currentUser.userType == 'student';
+  }
+
+  // Verificar si hay un usuario logueado
+  bool get isLoggedIn {
+    return _supabase.auth.currentUser != null;
+  }
+
+  // Navegar a la vista de verificación de vendedor
+  void goToVerification() {
+    if (!isLoggedIn) {
+      Get.snackbar(
+        'Acceso Denegado',
+        'Debes iniciar sesión para solicitar verificación',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+    Get.toNamed(Routes.SELLER_VERIFICATION);
   }
 
   // Cargar todos los posts
@@ -71,8 +92,8 @@ class MarketplaceController extends GetxController {
     selectedCategory.value = category;
   }
 
-  // Navegar a crear post (solo estudiantes)
-  void goToCreatePost() {
+  // Navegar a crear post (solo estudiantes verificados)
+  Future<void> goToCreatePost() async {
     if (!isStudent) {
       Get.snackbar(
         'Acceso Denegado',
@@ -81,6 +102,54 @@ class MarketplaceController extends GetxController {
       );
       return;
     }
+
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      Get.snackbar(
+        'Error',
+        'Debes iniciar sesión',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    // Verificar si el usuario está verificado
+    final isVerified = await _verificationService.isUserVerified(user.id);
+    if (!isVerified) {
+      Get.dialog(
+        AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+              const SizedBox(width: 8),
+              const Text('Verificación Obligatoria'),
+            ],
+          ),
+          content: const Text(
+            'Para crear publicaciones en el marketplace es obligatorio estar verificado como vendedor.\n\n✓ Protege a la comunidad\n✓ Genera confianza\n✓ Previene fraudes\n\nContacta al staff por WhatsApp para completar tu verificación.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Get.back();
+                goToVerification();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Verificarme Ahora'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     Get.toNamed('/create-post');
   }
 
@@ -111,6 +180,18 @@ class MarketplaceController extends GetxController {
           'Error',
           'Sesión no válida. Por favor inicia sesión nuevamente',
           snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      // Verificar que el usuario esté verificado
+      final isVerified = await _verificationService.isUserVerified(user.id);
+      if (!isVerified) {
+        Get.snackbar(
+          'Error',
+          'Debes estar verificado para crear publicaciones',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
         );
         return;
       }

@@ -18,6 +18,7 @@ import '../modules/marketplace/marketplace_binding.dart';
 import '../modules/marketplace/create_post_page.dart';
 import '../modules/marketplace/edit_post_page.dart';
 import '../modules/marketplace/my_posts_page.dart';
+import '../modules/marketplace/views/seller_verification_view.dart';
 
 part 'app_routes.dart';
 
@@ -78,6 +79,11 @@ class AppPages {
     GetPage(
       name: Routes.MY_POSTS,
       page: () => const MyPostsPage(),
+      binding: MarketplaceBinding(),
+    ),
+    GetPage(
+      name: Routes.SELLER_VERIFICATION,
+      page: () => const SellerVerificationView(),
       binding: MarketplaceBinding(),
     ),
   ];
