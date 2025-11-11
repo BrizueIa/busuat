@@ -160,6 +160,8 @@ class MarketplaceController extends GetxController {
     required double price,
     String? imgLink,
     required List<String> categories,
+    String? phoneNumber,
+    String? faculty,
   }) async {
     try {
       // Verificar primero con el AuthRepository
@@ -184,8 +186,13 @@ class MarketplaceController extends GetxController {
         return;
       }
 
+      print('👤 Usuario actual UID: ${user.id}');
+      print('📧 Email del usuario: ${user.email}');
+
       // Verificar que el usuario esté verificado
       final isVerified = await _verificationService.isUserVerified(user.id);
+      print('🔐 Resultado de verificación: $isVerified');
+
       if (!isVerified) {
         Get.snackbar(
           'Error',
@@ -205,6 +212,8 @@ class MarketplaceController extends GetxController {
         price: price,
         imgLink: imgLink,
         categories: categories,
+        phoneNumber: phoneNumber,
+        faculty: faculty,
       );
 
       await _postService.createPost(post);
@@ -212,13 +221,15 @@ class MarketplaceController extends GetxController {
       // Recargar la lista de posts después de crear uno nuevo
       await loadPosts();
 
+      // Volver a la vista anterior
+      Get.back();
+
+      // Mostrar mensaje de éxito después de volver
       Get.snackbar(
         'Éxito',
         'Publicación creada correctamente',
         snackPosition: SnackPosition.BOTTOM,
       );
-
-      Get.back(); // Volver a la vista anterior
     } catch (e) {
       Get.snackbar(
         'Error',

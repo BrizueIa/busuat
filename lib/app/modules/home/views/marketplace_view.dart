@@ -146,7 +146,7 @@ class _PostCard extends StatelessWidget {
       elevation: 2,
       child: InkWell(
         onTap: () {
-          // TODO: Navegar a detalle del post
+          Get.toNamed('/post-detail', arguments: post);
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

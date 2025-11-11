@@ -6,6 +6,8 @@ class PostModel {
   final double price;
   final String? imgLink;
   final List<String> categories;
+  final String? phoneNumber;
+  final String? faculty;
 
   PostModel({
     this.id,
@@ -15,6 +17,8 @@ class PostModel {
     this.price = 0.0,
     this.imgLink,
     this.categories = const [],
+    this.phoneNumber,
+    this.faculty,
   });
 
   // Convertir desde JSON de Supabase
@@ -29,6 +33,8 @@ class PostModel {
       categories: json['categories'] != null
           ? List<String>.from(json['categories'] as List)
           : [],
+      phoneNumber: json['phone_number'] as String?,
+      faculty: json['faculty'] as String?,
     );
   }
 
@@ -42,6 +48,8 @@ class PostModel {
       'price': price,
       'img_link': imgLink,
       'categories': categories,
+      if (phoneNumber != null) 'phone_number': phoneNumber,
+      if (faculty != null) 'faculty': faculty,
     };
   }
 
@@ -54,6 +62,8 @@ class PostModel {
     double? price,
     String? imgLink,
     List<String>? categories,
+    String? phoneNumber,
+    String? faculty,
   }) {
     return PostModel(
       id: id ?? this.id,
@@ -63,6 +73,8 @@ class PostModel {
       price: price ?? this.price,
       imgLink: imgLink ?? this.imgLink,
       categories: categories ?? this.categories,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      faculty: faculty ?? this.faculty,
     );
   }
 }

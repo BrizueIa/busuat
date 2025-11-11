@@ -98,6 +98,29 @@ class ProfileView extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // Botón para Gestión de Teléfonos
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Get.toNamed('/manage-phones'),
+                  icon: const Icon(Icons.phone),
+                  label: const Text(
+                    'Mis Teléfonos',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               // Botón de cerrar sesión
               SizedBox(
                 width: double.infinity,
