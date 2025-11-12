@@ -13,4 +13,7 @@ abstract class Routes {
   static const CREATE_POST = '/create-post';
   static const EDIT_POST = '/edit-post';
   static const MY_POSTS = '/my-posts';
+  static const SELLER_VERIFICATION = '/seller-verification';
+  static const MANAGE_PHONES = '/manage-phones';
+  static const POST_DETAIL = '/post-detail';
 }

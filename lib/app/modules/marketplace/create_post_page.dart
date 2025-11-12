@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'marketplace_controller.dart';
+import '../../data/services/phone_storage_service.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -18,6 +19,38 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   final List<String> _selectedCategories = [];
   final MarketplaceController controller = Get.find<MarketplaceController>();
+  final PhoneStorageService _phoneService = PhoneStorageService();
+
+  String? _selectedPhone;
+  String? _selectedFacultad;
+  List<Map<String, String>> _savedPhones = [];
+
+  final List<String> _facultades = [
+    'Ingeniería',
+    'Medicina',
+    'Derecho',
+    'Administración',
+    'Arquitectura',
+    'Contaduría',
+    'Enfermería',
+    'Psicología',
+    'Educación',
+    'Artes',
+    'Otra',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedPhones();
+  }
+
+  Future<void> _loadSavedPhones() async {
+    final phones = _phoneService.getSavedPhones();
+    setState(() {
+      _savedPhones = phones;
+    });
+  }
 
   @override
   void dispose() {
@@ -52,6 +85,24 @@ class _CreatePostPageState extends State<CreatePostPage> {
       return;
     }
 
+    if (_selectedPhone == null) {
+      Get.snackbar(
+        'Error',
+        'Selecciona un número de teléfono',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (_selectedFacultad == null) {
+      Get.snackbar(
+        'Error',
+        'Selecciona tu facultad',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     final price = double.tryParse(_priceController.text) ?? 0.0;
 
     await controller.createPost(
@@ -62,6 +113,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
           ? null
           : _imgLinkController.text.trim(),
       categories: _selectedCategories,
+      phoneNumber: _selectedPhone,
+      faculty: _selectedFacultad,
     );
   }
 
@@ -159,6 +212,118 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     }
                     if (price < 0) {
                       return 'El precio no puede ser negativo';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Teléfono de contacto
+                if (_savedPhones.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.orange.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.orange.shade50,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.phone, color: Colors.orange.shade700),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'No tienes teléfonos guardados',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange.shade900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Necesitas registrar al menos un número de teléfono para publicar',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            await Get.toNamed('/manage-phones');
+                            _loadSavedPhones();
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('Agregar Teléfono'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Teléfono de contacto *',
+                      hintText: 'Selecciona un teléfono',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone),
+                    ),
+                    initialValue: _selectedPhone,
+                    items: _savedPhones.map((phoneData) {
+                      final phone = phoneData['phone'] ?? '';
+                      final label = phoneData['label'] ?? '';
+                      return DropdownMenuItem(
+                        value: phone,
+                        child: Text('$label ($phone)'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedPhone = value;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Selecciona un teléfono';
+                      }
+                      return null;
+                    },
+                  ),
+                const SizedBox(height: 16),
+
+                // Facultad
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Facultad *',
+                    hintText: 'Selecciona tu facultad',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.school),
+                  ),
+                  initialValue: _selectedFacultad,
+                  items: _facultades.map((facultad) {
+                    return DropdownMenuItem(
+                      value: facultad,
+                      child: Text(facultad),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedFacultad = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Selecciona tu facultad';
                     }
                     return null;
                   },

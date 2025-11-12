@@ -6,6 +6,10 @@ class PostModel {
   final double price;
   final String? imgLink;
   final List<String> categories;
+  final String? phoneNumber;
+  final String? faculty;
+  final double averageRating;
+  final int ratingsCount;
 
   PostModel({
     this.id,
@@ -15,6 +19,10 @@ class PostModel {
     this.price = 0.0,
     this.imgLink,
     this.categories = const [],
+    this.phoneNumber,
+    this.faculty,
+    this.averageRating = 0.0,
+    this.ratingsCount = 0,
   });
 
   // Convertir desde JSON de Supabase
@@ -29,6 +37,10 @@ class PostModel {
       categories: json['categories'] != null
           ? List<String>.from(json['categories'] as List)
           : [],
+      phoneNumber: json['phone_number'] as String?,
+      faculty: json['faculty'] as String?,
+      averageRating: (json['average_rating'] as num?)?.toDouble() ?? 0.0,
+      ratingsCount: json['ratings_count'] as int? ?? 0,
     );
   }
 
@@ -42,6 +54,8 @@ class PostModel {
       'price': price,
       'img_link': imgLink,
       'categories': categories,
+      if (phoneNumber != null) 'phone_number': phoneNumber,
+      if (faculty != null) 'faculty': faculty,
     };
   }
 
@@ -54,6 +68,10 @@ class PostModel {
     double? price,
     String? imgLink,
     List<String>? categories,
+    String? phoneNumber,
+    String? faculty,
+    double? averageRating,
+    int? ratingsCount,
   }) {
     return PostModel(
       id: id ?? this.id,
@@ -63,6 +81,10 @@ class PostModel {
       price: price ?? this.price,
       imgLink: imgLink ?? this.imgLink,
       categories: categories ?? this.categories,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      faculty: faculty ?? this.faculty,
+      averageRating: averageRating ?? this.averageRating,
+      ratingsCount: ratingsCount ?? this.ratingsCount,
     );
   }
 }
