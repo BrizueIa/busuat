@@ -571,6 +571,7 @@ class MapController extends GetxController {
         icon:
             _customIcons['bus'] ??
             BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        zIndex: 1000, // Prioridad máxima para que siempre se muestre encima
       );
 
       newMarkers.add(busMarker);
