@@ -8,6 +8,8 @@ class PostModel {
   final List<String> categories;
   final String? phoneNumber;
   final String? faculty;
+  final double averageRating;
+  final int ratingsCount;
 
   PostModel({
     this.id,
@@ -19,6 +21,8 @@ class PostModel {
     this.categories = const [],
     this.phoneNumber,
     this.faculty,
+    this.averageRating = 0.0,
+    this.ratingsCount = 0,
   });
 
   // Convertir desde JSON de Supabase
@@ -35,6 +39,8 @@ class PostModel {
           : [],
       phoneNumber: json['phone_number'] as String?,
       faculty: json['faculty'] as String?,
+      averageRating: (json['average_rating'] as num?)?.toDouble() ?? 0.0,
+      ratingsCount: json['ratings_count'] as int? ?? 0,
     );
   }
 
@@ -64,6 +70,8 @@ class PostModel {
     List<String>? categories,
     String? phoneNumber,
     String? faculty,
+    double? averageRating,
+    int? ratingsCount,
   }) {
     return PostModel(
       id: id ?? this.id,
@@ -75,6 +83,8 @@ class PostModel {
       categories: categories ?? this.categories,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       faculty: faculty ?? this.faculty,
+      averageRating: averageRating ?? this.averageRating,
+      ratingsCount: ratingsCount ?? this.ratingsCount,
     );
   }
 }

@@ -2,29 +2,192 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/post_model.dart';
+import '../../../data/services/rating_service.dart';
+import '../../../data/repositories/auth_repository.dart';
 
-class PostDetailView extends StatelessWidget {
+class PostDetailView extends StatefulWidget {
   const PostDetailView({super.key});
+
+  @override
+  State<PostDetailView> createState() => _PostDetailViewState();
+}
+
+class _PostDetailViewState extends State<PostDetailView> {
+  final RatingService _ratingService = RatingService();
+  final _supabase = Supabase.instance.client;
+  final _authRepository = AuthRepository();
+
+  double _averageRating = 0.0;
+  int _ratingsCount = 0;
+  bool _isLoadingRating = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRatingData();
+  }
+
+  Future<void> _loadRatingData() async {
+    final PostModel post = Get.arguments as PostModel;
+    if (post.id == null) return;
+
+    setState(() => _isLoadingRating = true);
+
+    try {
+      final avgRating = await _ratingService.getPostAverageRating(post.id!);
+      final ratings = await _ratingService.getPostRatings(post.id!);
+
+      setState(() {
+        _averageRating = avgRating;
+        _ratingsCount = ratings.length;
+        _isLoadingRating = false;
+      });
+    } catch (e) {
+      print('Error loading rating: $e');
+      setState(() => _isLoadingRating = false);
+    }
+  }
+
+  Future<void> _showRatingDialog() async {
+    // Verificar que sea estudiante (no invitado)
+    final currentUser = _authRepository.getCurrentUser();
+    if (currentUser == null || currentUser.userType != 'student') {
+      Get.snackbar(
+        'Error',
+        'Debes iniciar sesión como estudiante para calificar',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    // Verificar que el usuario de Supabase esté autenticado
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      Get.snackbar(
+        'Error',
+        'Debes iniciar sesión para calificar',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    // Verificar que el correo termine con uat.edu.mx
+    if (user.email == null || !user.email!.endsWith('uat.edu.mx')) {
+      Get.snackbar(
+        'Error',
+        'Solo usuarios con correo institucional pueden calificar',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    int tempRating = 0;
+
+    await Get.dialog(
+      AlertDialog(
+        title: const Text('Calificar Publicación'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Selecciona tu calificación:'),
+            const SizedBox(height: 16),
+            StatefulBuilder(
+              builder: (context, setDialogState) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    return IconButton(
+                      icon: Icon(
+                        index < tempRating ? Icons.star : Icons.star_border,
+                        color: Colors.orange,
+                        size: 32,
+                      ),
+                      onPressed: () {
+                        setDialogState(() => tempRating = index + 1);
+                      },
+                    );
+                  }),
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (tempRating == 0) {
+                Get.snackbar(
+                  'Error',
+                  'Selecciona una calificación',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                return;
+              }
+
+              Get.back();
+
+              final PostModel post = Get.arguments as PostModel;
+              final success = await _ratingService.ratePost(
+                postId: post.id!,
+                rating: tempRating,
+                body: null,
+              );
+
+              if (success) {
+                await _loadRatingData();
+                Get.snackbar(
+                  'Éxito',
+                  'Calificación guardada',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              } else {
+                Get.snackbar(
+                  'Error',
+                  'No se pudo guardar la calificación',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _contactSeller(String phone) async {
     final whatsappUrl = 'https://wa.me/52$phone';
     final uri = Uri.parse(whatsappUrl);
 
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
+      // Intentar abrir WhatsApp directamente
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
         Get.snackbar(
           'Error',
-          'No se pudo abrir WhatsApp',
+          'No se pudo abrir WhatsApp. Verifica que esté instalado.',
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } catch (e) {
+      print('Error al abrir WhatsApp: $e');
       Get.snackbar(
         'Error',
-        'Ocurrió un error al intentar contactar',
+        'No se pudo abrir WhatsApp. Verifica que esté instalado.',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -118,6 +281,47 @@ class PostDetailView extends StatelessWidget {
                           ],
                         ),
                       ],
+
+                      // Rating
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          // Estrellas y promedio
+                          Row(
+                            children: List.generate(5, (index) {
+                              return Icon(
+                                index < _averageRating.round()
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: Colors.orange,
+                                size: 20,
+                              );
+                            }),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isLoadingRating
+                                ? 'Cargando...'
+                                : '${_averageRating.toStringAsFixed(1)} ($_ratingsCount)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+                          // Botón para calificar
+                          if (!_isLoadingRating)
+                            TextButton.icon(
+                              onPressed: _showRatingDialog,
+                              icon: const Icon(Icons.star_rate, size: 18),
+                              label: const Text('Calificar'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.orange,
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

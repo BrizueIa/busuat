@@ -52,9 +52,13 @@ Quedo atento a sus indicaciones.
     final uri = Uri.parse(whatsappUrl);
 
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
+      // Intentar abrir WhatsApp directamente
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
         Get.snackbar(
           'Error',
           'No se pudo abrir WhatsApp. Asegúrate de tener la aplicación instalada.',
@@ -63,9 +67,10 @@ Quedo atento a sus indicaciones.
         );
       }
     } catch (e) {
+      print('Error al abrir WhatsApp: $e');
       Get.snackbar(
         'Error',
-        'Ocurrió un error al intentar abrir WhatsApp',
+        'No se pudo abrir WhatsApp. Verifica que esté instalado.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
       );

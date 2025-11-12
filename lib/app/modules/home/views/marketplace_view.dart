@@ -174,11 +174,12 @@ class _PostCard extends StatelessWidget {
             ),
             // Información del producto
             Expanded(
-              flex: 2,
+              flex: 3,
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       post.title ?? 'Sin título',
@@ -189,7 +190,7 @@ class _PostCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 4),
                     Text(
                       '\$${post.price.toStringAsFixed(2)}',
                       style: const TextStyle(
@@ -198,6 +199,38 @@ class _PostCard extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
+                    // Rating
+                    if (post.averageRating > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              size: 12,
+                              color: Colors.orange,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              post.averageRating.toStringAsFixed(1),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            if (post.ratingsCount > 0) ...[
+                              const SizedBox(width: 2),
+                              Text(
+                                '(${post.ratingsCount})',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     if (post.categories != null && post.categories.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),

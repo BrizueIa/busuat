@@ -4,7 +4,7 @@ import '../models/post_model.dart';
 class PostService {
   final _supabase = Supabase.instance.client;
 
-  // Obtener todos los posts
+  // Obtener todos los posts con sus ratings
   Future<List<PostModel>> getAllPosts() async {
     try {
       final response = await _supabase
@@ -12,13 +12,56 @@ class PostService {
           .select()
           .order('id', ascending: false);
 
-      return (response as List)
+      final posts = (response as List)
           .map((post) => PostModel.fromJson(post))
           .toList();
+
+      // Cargar ratings para cada post
+      return await _loadRatingsForPosts(posts);
     } catch (e) {
       print('❌ Error al obtener posts: $e');
       rethrow;
     }
+  }
+
+  // Método privado para cargar ratings de múltiples posts
+  Future<List<PostModel>> _loadRatingsForPosts(List<PostModel> posts) async {
+    final updatedPosts = <PostModel>[];
+
+    for (var post in posts) {
+      if (post.id == null) {
+        updatedPosts.add(post);
+        continue;
+      }
+
+      try {
+        // Obtener rating promedio usando la función RPC
+        final avgRating = await _supabase.rpc(
+          'get_post_average_rating',
+          params: {'given_post_id': post.id!},
+        );
+
+        // Contar ratings
+        final ratingsResponse = await _supabase
+            .from('posts_ratings')
+            .select('id')
+            .eq('post_id', post.id!);
+
+        final ratingsCount = (ratingsResponse as List).length;
+
+        updatedPosts.add(
+          post.copyWith(
+            averageRating: (avgRating as num?)?.toDouble() ?? 0.0,
+            ratingsCount: ratingsCount,
+          ),
+        );
+      } catch (e) {
+        print('⚠️ Error al cargar rating para post ${post.id}: $e');
+        updatedPosts.add(post);
+      }
+    }
+
+    return updatedPosts;
   }
 
   // Crear un nuevo post
@@ -38,7 +81,7 @@ class PostService {
     }
   }
 
-  // Obtener posts de un usuario específico
+  // Obtener posts de un usuario específico con ratings
   Future<List<PostModel>> getUserPosts(String userId) async {
     try {
       final response = await _supabase
@@ -47,9 +90,11 @@ class PostService {
           .eq('user_id', userId)
           .order('id', ascending: false);
 
-      return (response as List)
+      final posts = (response as List)
           .map((post) => PostModel.fromJson(post))
           .toList();
+
+      return await _loadRatingsForPosts(posts);
     } catch (e) {
       print('❌ Error al obtener posts del usuario: $e');
       rethrow;
@@ -85,7 +130,7 @@ class PostService {
     }
   }
 
-  // Buscar posts por categoría
+  // Buscar posts por categoría con ratings
   Future<List<PostModel>> getPostsByCategory(String category) async {
     try {
       final response = await _supabase
@@ -94,9 +139,11 @@ class PostService {
           .contains('categories', [category])
           .order('id', ascending: false);
 
-      return (response as List)
+      final posts = (response as List)
           .map((post) => PostModel.fromJson(post))
           .toList();
+
+      return await _loadRatingsForPosts(posts);
     } catch (e) {
       print('❌ Error al buscar posts por categoría: $e');
       rethrow;
