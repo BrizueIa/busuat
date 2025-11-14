@@ -4,16 +4,68 @@ import 'package:get/get.dart';
 
 import 'models/agenda_item.dart';
 import 'agenda_service.dart';
+import 'models/schedule_item.dart';
+import 'schedule_service.dart';
 
 class AgendaController extends GetxController {
   final AgendaService _service = AgendaService();
 
   final items = <AgendaItem>[].obs;
+  // Horario estático del usuario (lista semanal)
+  final scheduleItems = <ScheduleItem>[].obs;
+  final _scheduleService = ScheduleService();
 
   @override
   void onInit() {
     super.onInit();
     loadItems();
+    loadSchedule();
+  }
+
+  Future<void> loadSchedule() async {
+    final loaded = await _scheduleService.getItems();
+    scheduleItems.assignAll(loaded);
+  }
+
+  Future<void> addScheduleItem({
+    required String subject,
+    required List<int> weekdays,
+    required String start,
+    required String end,
+    String? location,
+    String? grade,
+    String? group,
+    String? classroom,
+    String? professor,
+  }) async {
+    final item = ScheduleItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      subject: subject,
+      weekdays: weekdays,
+      start: start,
+      end: end,
+      location: location,
+      grade: grade,
+      group: group,
+      classroom: classroom,
+      professor: professor,
+    );
+    await _scheduleService.addItem(item);
+    scheduleItems.insert(0, item);
+  }
+
+  Future<void> updateScheduleItem(ScheduleItem updated) async {
+    await _scheduleService.updateItem(updated);
+    final i = scheduleItems.indexWhere((s) => s.id == updated.id);
+    if (i != -1) {
+      scheduleItems[i] = updated;
+      scheduleItems.refresh();
+    }
+  }
+
+  Future<void> removeScheduleItem(ScheduleItem item) async {
+    await _scheduleService.removeItem(item.id);
+    scheduleItems.removeWhere((s) => s.id == item.id);
   }
 
   Future<void> loadItems() async {
@@ -63,7 +115,6 @@ class AgendaController extends GetxController {
 
   void setSortMode(String mode) {
     sortMode.value = mode;
-    // trigger UI refresh if needed
     items.refresh();
   }
 
@@ -77,7 +128,6 @@ class AgendaController extends GetxController {
     final i = items.indexWhere((it) => it.id == updated.id);
     if (i != -1) {
       items[i] = updated;
-      // trigger update
       items.refresh();
     }
   }

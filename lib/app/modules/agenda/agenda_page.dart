@@ -647,6 +647,4 @@ class AgendaPage extends GetView<AgendaController> {
       },
     );
   }
-
-  // date/time formatting delegated to agenda_utils
 }
