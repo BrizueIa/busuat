@@ -16,7 +16,7 @@ class ScheduleListPage extends GetView<AgendaController> {
     const orange = Color.fromARGB(255, 255, 152, 0);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vista de lista'),
+        title: const Text('Lista de materias'),
         backgroundColor: orange,
         iconTheme: const IconThemeData(color: Colors.white),
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
