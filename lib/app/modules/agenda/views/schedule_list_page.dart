@@ -31,10 +31,43 @@ class ScheduleListPage extends GetView<AgendaController> {
         ],
       ),
       body: Obx(() {
-        final items = controller.scheduleItems;
+        final items = controller.scheduleItems.toList();
         if (items.isEmpty) {
           return const Center(child: Text('No hay materias en el horario'));
         }
+
+        // Ordenar por día (primer día de weekdays) y luego por hora
+        items.sort((a, b) {
+          // Obtener el primer día de cada materia
+          final firstDayA = a.weekdays.isEmpty
+              ? 7
+              : a.weekdays.reduce((curr, next) => curr < next ? curr : next);
+          final firstDayB = b.weekdays.isEmpty
+              ? 7
+              : b.weekdays.reduce((curr, next) => curr < next ? curr : next);
+
+          // Primero comparar por día
+          final dayCompare = firstDayA.compareTo(firstDayB);
+          if (dayCompare != 0) return dayCompare;
+
+          // Si es el mismo día, comparar por hora de inicio
+          final partsA = a.start.split(':');
+          final partsB = b.start.split(':');
+
+          final hourA = int.tryParse(partsA[0]) ?? 0;
+          final hourB = int.tryParse(partsB[0]) ?? 0;
+          final minuteA = partsA.length > 1
+              ? (int.tryParse(partsA[1]) ?? 0)
+              : 0;
+          final minuteB = partsB.length > 1
+              ? (int.tryParse(partsB[1]) ?? 0)
+              : 0;
+
+          final totalMinutesA = hourA * 60 + minuteA;
+          final totalMinutesB = hourB * 60 + minuteB;
+
+          return totalMinutesA.compareTo(totalMinutesB);
+        });
 
         return ListView.separated(
           padding: const EdgeInsets.all(12),
