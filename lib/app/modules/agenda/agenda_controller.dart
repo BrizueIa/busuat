@@ -11,7 +11,6 @@ class AgendaController extends GetxController {
   final AgendaService _service = AgendaService();
 
   final items = <AgendaItem>[].obs;
-  // Horario estático del usuario (lista semanal)
   final scheduleItems = <ScheduleItem>[].obs;
   final _scheduleService = ScheduleService();
 

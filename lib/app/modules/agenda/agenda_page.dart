@@ -4,9 +4,38 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'agenda_controller.dart';
 import 'agenda_detail_page.dart';
+import 'agenda_create_page.dart';
 import 'agenda_utils.dart';
-// detalle: existe `AgendaDetailPage` para vista completa/lectura
 import 'package:flutter/widgets.dart';
+
+String _truncatePreview(
+  String text, {
+  int maxParagraphs = 5,
+  int maxChars = 420,
+}) {
+  if (text.trim().isEmpty) return '';
+  final paragraphs = text
+      .split(RegExp(r'\r?\n'))
+      .where((p) => p.trim().isNotEmpty)
+      .toList();
+  String out;
+  if (paragraphs.isEmpty) {
+    out = text;
+  } else {
+    final take = paragraphs.take(maxParagraphs).toList();
+    out = take.join('\n');
+  }
+  if (out.length > maxChars) {
+    out = out.substring(0, maxChars).trimRight();
+
+    final lastSpace = out.lastIndexOf(' ');
+    if (lastSpace > 0) out = out.substring(0, lastSpace);
+    out = '$out (...)';
+  } else if (paragraphs.length > maxParagraphs) {
+    out = '$out\n(...)';
+  }
+  return out;
+}
 
 class AgendaPage extends GetView<AgendaController> {
   const AgendaPage({super.key});
@@ -320,7 +349,7 @@ class AgendaPage extends GetView<AgendaController> {
                           child: GestureDetector(
                             onTap: () => Get.to(
                               () =>
-                                  AgendaDetailPage(item: item, readOnly: false),
+                                  AgendaDetailPage(item: item, readOnly: true),
                             ),
                             child: Container(
                               decoration: BoxDecoration(
@@ -408,8 +437,13 @@ class AgendaPage extends GetView<AgendaController> {
                                                         right: 8.0,
                                                       ),
                                                   child: Text(
-                                                    item.description,
+                                                    _truncatePreview(
+                                                      item.description,
+                                                    ),
                                                     style: doneStyle,
+                                                    maxLines: 5,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                             ],
@@ -503,148 +537,8 @@ class AgendaPage extends GetView<AgendaController> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.orange,
         child: const Icon(Icons.add),
-        onPressed: () => _showAddDialog(context),
+        onPressed: () => Get.to(() => const AgendaCreatePage()),
       ),
-    );
-  }
-
-  void _showAddDialog(BuildContext context) {
-    final titleCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final categoryCtrl = TextEditingController();
-    DateTime when = DateTime.now().add(const Duration(hours: 1));
-
-    showDialog(
-      context: context,
-      builder: (_) {
-        bool hasReminder = false;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final displayWhen = hasReminder ? when : null;
-            return AlertDialog(
-              title: const Text('Añadir'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(labelText: 'Título'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: categoryCtrl,
-                    decoration: const InputDecoration(labelText: 'Categoría'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: descCtrl,
-                    decoration: const InputDecoration(labelText: 'Descripción'),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile(
-                    title: const Text('Establecer recordatorio'),
-                    value: hasReminder,
-                    onChanged: (v) => setState(() => hasReminder = v),
-                  ),
-                  if (hasReminder) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text('Fecha: ${formatDate(displayWhen)}'),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.calendar_month),
-                          onPressed: () async {
-                            final d = await showDatePicker(
-                              context: Navigator.of(
-                                context,
-                                rootNavigator: true,
-                              ).context,
-                              initialDate: when,
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                              locale: const Locale('es', 'ES'),
-                            );
-                            if (d != null) {
-                              setState(
-                                () => when = DateTime(
-                                  d.year,
-                                  d.month,
-                                  d.day,
-                                  when.hour,
-                                  when.minute,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text('Hora: ${formatTime(displayWhen)}'),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.access_time),
-                          onPressed: () async {
-                            final t = await showTimePicker(
-                              context: Navigator.of(
-                                context,
-                                rootNavigator: true,
-                              ).context,
-                              initialTime: TimeOfDay.fromDateTime(when),
-                              builder: (context, child) =>
-                                  Localizations.override(
-                                    context: context,
-                                    locale: const Locale('es', 'ES'),
-                                    child: child ?? const SizedBox.shrink(),
-                                  ),
-                            );
-                            if (t != null)
-                              setState(
-                                () => when = DateTime(
-                                  when.year,
-                                  when.month,
-                                  when.day,
-                                  t.hour,
-                                  t.minute,
-                                ),
-                              );
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    final title = titleCtrl.text.trim();
-                    final description = descCtrl.text.trim();
-                    final category = categoryCtrl.text.trim();
-                    if (title.isEmpty) return;
-                    await controller.addItem(
-                      title,
-                      description,
-                      hasReminder ? when : null,
-                      category: category.isEmpty ? null : category,
-                    );
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Añadir'),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 }

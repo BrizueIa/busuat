@@ -40,8 +40,9 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
     categoryCtrl = TextEditingController(text: widget.item.category ?? '');
     when = widget.item.when;
     hasReminder = when != null;
-    // Abrir en modo edición al entrar en detalle
-    isEditing = true;
+    // Si la página se abrió en readOnly, empezar en modo lectura;
+    // si se pasó readOnly=false, iniciar en modo edición.
+    isEditing = !widget.readOnly;
   }
 
   void _enterEdit() {
@@ -95,11 +96,16 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalle'),
+        title: const Text('Detalle', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.orange,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete),
+            icon: const Icon(
+              Icons.delete,
+              color: Color.fromARGB(255, 65, 64, 64),
+            ),
             onPressed: () async {
               final ok = await showDialog<bool>(
                 context: context,
@@ -160,7 +166,21 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
             ),
             const SizedBox(height: 6),
             if ((current.category ?? '').isNotEmpty)
-              Chip(label: Text(current.category!)),
+              Row(
+                children: [
+                  InkWell(
+                    onTap: _enterEdit,
+                    child: Chip(
+                      label: Text(current.category!),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             const SizedBox(height: 12),
             if (current.description.isNotEmpty)
               GestureDetector(
@@ -177,24 +197,30 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
               ),
             const SizedBox(height: 20),
             if (current.when != null) ...[
-              Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    size: 18,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(formatDate(current.when)),
-                ],
+              InkWell(
+                onTap: _enterEdit,
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today,
+                      size: 18,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(formatDate(current.when)),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.access_time, size: 18, color: Colors.grey),
-                  const SizedBox(width: 8),
-                  Text(formatTime(current.when)),
-                ],
+              InkWell(
+                onTap: _enterEdit,
+                child: Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 18, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text(formatTime(current.when)),
+                  ],
+                ),
               ),
             ],
             const SizedBox(height: 24),
@@ -222,6 +248,23 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
                 ),
                 const SizedBox(width: 4),
                 const Text('Hecho'),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: _enterEdit,
+                  icon: Icon(Icons.edit, size: 18, color: Colors.grey[700]),
+                  label: Text(
+                    'Editar',
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 6.0,
+                    ),
+                    minimumSize: const Size(0, 36),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
               ],
             ),
           ],
@@ -231,120 +274,132 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
   }
 
   Widget _buildEditor(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: titleCtrl,
-          decoration: const InputDecoration(labelText: 'Título'),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: categoryCtrl,
-          decoration: const InputDecoration(labelText: 'Categoría'),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: descCtrl,
-          decoration: const InputDecoration(labelText: 'Descripción'),
-          minLines: 3,
-          maxLines: null,
-        ),
-        const SizedBox(height: 8),
-        SwitchListTile(
-          title: const Text('Establecer recordatorio'),
-          value: hasReminder,
-          onChanged: (v) => setState(() {
-            hasReminder = v;
-            if (!hasReminder) {
-              when = null;
-            } else {
-              when ??= DateTime.now().add(const Duration(hours: 1));
-            }
-          }),
-        ),
-        const SizedBox(height: 12),
-        if (hasReminder) ...[
-          Row(
-            children: [
-              Expanded(child: Text('Fecha: ${formatDate(when)}')),
-              IconButton(
-                icon: const Icon(Icons.calendar_month),
-                onPressed: () async {
-                  final d = await showDatePicker(
-                    context: Navigator.of(context, rootNavigator: true).context,
-                    initialDate: when ?? DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    locale: const Locale('es', 'ES'),
-                  );
-                  if (d != null) {
-                    setState(() {
-                      when = DateTime(
-                        d.year,
-                        d.month,
-                        d.day,
-                        when?.hour ?? 0,
-                        when?.minute ?? 0,
-                      );
-                    });
-                  }
-                },
-              ),
-            ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: titleCtrl,
+            decoration: const InputDecoration(labelText: 'Título'),
           ),
-
-          Row(
-            children: [
-              Expanded(child: Text('Hora: ${formatTime(when)}')),
-              IconButton(
-                icon: const Icon(Icons.access_time),
-                onPressed: () async {
-                  final t = await showTimePicker(
-                    context: Navigator.of(context, rootNavigator: true).context,
-                    initialTime: TimeOfDay.fromDateTime(when ?? DateTime.now()),
-                    builder: (context, child) => Localizations.override(
-                      context: context,
+          const SizedBox(height: 8),
+          TextField(
+            controller: categoryCtrl,
+            decoration: const InputDecoration(labelText: 'Categoría'),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: descCtrl,
+            decoration: const InputDecoration(labelText: 'Descripción'),
+            minLines: 3,
+            maxLines: null,
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            title: const Text('Establecer recordatorio'),
+            value: hasReminder,
+            onChanged: (v) => setState(() {
+              hasReminder = v;
+              if (!hasReminder) {
+                when = null;
+              } else {
+                when ??= DateTime.now().add(const Duration(hours: 1));
+              }
+            }),
+          ),
+          const SizedBox(height: 12),
+          if (hasReminder) ...[
+            Row(
+              children: [
+                Expanded(child: Text('Fecha: ${formatDate(when)}')),
+                IconButton(
+                  icon: const Icon(Icons.calendar_month),
+                  onPressed: () async {
+                    final d = await showDatePicker(
+                      context: Navigator.of(
+                        context,
+                        rootNavigator: true,
+                      ).context,
+                      initialDate: when ?? DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
                       locale: const Locale('es', 'ES'),
-                      child: child ?? const SizedBox.shrink(),
-                    ),
-                  );
-                  if (t != null) {
-                    setState(() {
-                      when = DateTime(
-                        when?.year ?? DateTime.now().year,
-                        when?.month ?? DateTime.now().month,
-                        when?.day ?? DateTime.now().day,
-                        t.hour,
-                        t.minute,
-                      );
-                    });
-                  }
-                },
+                    );
+                    if (d != null) {
+                      setState(() {
+                        when = DateTime(
+                          d.year,
+                          d.month,
+                          d.day,
+                          when?.hour ?? 0,
+                          when?.minute ?? 0,
+                        );
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+
+            Row(
+              children: [
+                Expanded(child: Text('Hora: ${formatTime(when)}')),
+                IconButton(
+                  icon: const Icon(Icons.access_time),
+                  onPressed: () async {
+                    final t = await showTimePicker(
+                      context: Navigator.of(
+                        context,
+                        rootNavigator: true,
+                      ).context,
+                      initialTime: TimeOfDay.fromDateTime(
+                        when ?? DateTime.now(),
+                      ),
+                      builder: (context, child) => Localizations.override(
+                        context: context,
+                        locale: const Locale('es', 'ES'),
+                        child: child ?? const SizedBox.shrink(),
+                      ),
+                    );
+                    if (t != null) {
+                      setState(() {
+                        when = DateTime(
+                          when?.year ?? DateTime.now().year,
+                          when?.month ?? DateTime.now().month,
+                          when?.day ?? DateTime.now().day,
+                          t.hour,
+                          t.minute,
+                        );
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => setState(() => isEditing = false),
+                child: const Text('Cancelar'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  shape: const StadiumBorder(),
+                ),
+                onPressed: _save,
+                child: const Text('Guardar'),
               ),
             ],
           ),
         ],
-
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            TextButton(
-              onPressed: () => setState(() => isEditing = false),
-              child: const Text('Cancelar'),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-              onPressed: _save,
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
-
-  // format helpers delegated to agenda_utils.dart
 }
