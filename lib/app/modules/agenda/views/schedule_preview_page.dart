@@ -13,6 +13,24 @@ class SchedulePreviewPage extends GetView<AgendaController> {
     if (!Get.isRegistered<AgendaController>()) Get.put(AgendaController());
     const orange = Color.fromARGB(255, 255, 152, 0);
     // The table depends on reactive scheduleItems; rebuild when they change
+    final scrollController = ScrollController();
+
+    // Scroll automático al día de hoy después de construir
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final now = DateTime.now();
+      final todayWeekday = now.weekday; // 1..7
+      if (todayWeekday >= 1 &&
+          todayWeekday <= 6 &&
+          scrollController.hasClients) {
+        // Calcular el offset: 100 (columna hora) + (todayWeekday - 1) * 172 (160 + 12 margin)
+        final offset = 100.0 + (todayWeekday - 1) * 172.0;
+        scrollController.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +42,7 @@ class SchedulePreviewPage extends GetView<AgendaController> {
           IconButton(
             tooltip: 'Vista de lista',
             onPressed: () async => await Get.to(() => const ScheduleListPage()),
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add, size: 28),
           ),
         ],
       ),
@@ -69,6 +87,7 @@ class SchedulePreviewPage extends GetView<AgendaController> {
                       children: [
                         // entire table wrapped in a single horizontal scroll view
                         SingleChildScrollView(
+                          controller: scrollController,
                           scrollDirection: Axis.horizontal,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,22 +126,6 @@ class SchedulePreviewPage extends GetView<AgendaController> {
                                       ),
                                     );
                                   }),
-
-                                  // Profesor header, con el mismo margin que las celdas
-                                  Container(
-                                    width: 160,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'Profesor',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                               const SizedBox(height: 8),
@@ -131,7 +134,6 @@ class SchedulePreviewPage extends GetView<AgendaController> {
                                   items,
                                   rows[r],
                                 );
-                                final profesorVal = anyItem?.professor ?? '';
 
                                 return Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -153,7 +155,7 @@ class SchedulePreviewPage extends GetView<AgendaController> {
                                       ),
                                     ),
 
-                                    // Celdas de días: mostrar materia y debajo grupo + aula
+                                    // Celdas de días: mostrar materia, debajo grupo + aula, y profesor
                                     ...List.generate(6, (c) {
                                       final weekday = c + 1;
                                       final cellItem = _findItemFor(
@@ -194,6 +196,8 @@ class SchedulePreviewPage extends GetView<AgendaController> {
                                       final groupText =
                                           '${cellItem.grade ?? ''}${(cellItem.group ?? '').isNotEmpty ? ' ${cellItem.group}' : ''}';
                                       final aulaText = cellItem.classroom ?? '';
+                                      final profesorText =
+                                          cellItem.professor ?? '';
 
                                       return InkWell(
                                         borderRadius: BorderRadius.circular(8),
@@ -296,52 +300,26 @@ class SchedulePreviewPage extends GetView<AgendaController> {
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
+                                              if (profesorText.isNotEmpty) ...[
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  profesorText,
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade600,
+                                                    fontSize: 11,
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
                                             ],
                                           ),
                                         ),
                                       );
                                     }),
-
-                                    // Profesor (representativo del horario) — mostrar en caja blanca redondeada
-                                    Container(
-                                      width: 160,
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 6,
-                                      ),
-                                      padding: const EdgeInsets.all(6),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.grey.shade300,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.02,
-                                              ),
-                                              blurRadius: 2,
-                                              offset: const Offset(0, 1),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Text(
-                                          profesorVal,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                   ],
                                 );
                               }),
