@@ -40,7 +40,7 @@ class SchedulePreviewPage extends GetView<AgendaController> {
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
         actions: [
           IconButton(
-            tooltip: 'Vista de lista',
+            tooltip: 'Lista de materias',
             onPressed: () async => await Get.to(() => const ScheduleListPage()),
             icon: const Icon(Icons.add, size: 28),
           ),
