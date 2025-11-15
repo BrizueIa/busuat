@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:busuat/app/modules/agenda/agenda_controller.dart';
 import 'package:busuat/app/modules/agenda/views/schedule_edit_page.dart';
-import 'package:busuat/app/modules/agenda/views/schedule_preview_page.dart';
 import 'package:busuat/app/modules/agenda/widgets/confirm_dialog.dart';
 
 class ScheduleListPage extends GetView<AgendaController> {
@@ -17,15 +16,16 @@ class ScheduleListPage extends GetView<AgendaController> {
     const orange = Color.fromARGB(255, 255, 152, 0);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Horario'),
+        title: const Text('Vista de lista'),
         backgroundColor: orange,
         iconTheme: const IconThemeData(color: Colors.white),
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
         actions: [
           IconButton(
             tooltip: 'Vista previa',
-            onPressed: () async =>
-                await Get.to(() => const SchedulePreviewPage()),
+            onPressed: () {
+              Get.back();
+            },
             icon: const Icon(Icons.grid_view),
           ),
         ],

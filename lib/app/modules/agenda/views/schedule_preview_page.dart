@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:busuat/app/modules/agenda/agenda_controller.dart';
 import 'package:busuat/app/modules/agenda/models/schedule_item.dart';
 import 'package:busuat/app/modules/agenda/widgets/confirm_dialog.dart';
+import 'package:busuat/app/modules/agenda/views/schedule_list_page.dart';
 
 class SchedulePreviewPage extends GetView<AgendaController> {
   const SchedulePreviewPage({super.key});
@@ -15,10 +16,17 @@ class SchedulePreviewPage extends GetView<AgendaController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vista previa'),
+        title: const Text('Horario'),
         backgroundColor: orange,
         iconTheme: const IconThemeData(color: Colors.white),
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
+        actions: [
+          IconButton(
+            tooltip: 'Vista de lista',
+            onPressed: () async => await Get.to(() => const ScheduleListPage()),
+            icon: const Icon(Icons.add),
+          ),
+        ],
       ),
       body: Obx(() {
         final items = controller.scheduleItems;

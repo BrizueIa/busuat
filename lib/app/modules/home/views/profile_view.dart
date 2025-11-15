@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:busuat/app/modules/agenda/views/schedule_list_page.dart';
+import 'package:busuat/app/modules/agenda/views/schedule_preview_page.dart';
 import 'package:get/get.dart';
 import '../home_controller.dart';
 // Horario feature moved to its own module; removed from Profile view
@@ -96,7 +96,7 @@ class _ProfileViewState extends State<ProfileView> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    await Get.to(() => const ScheduleListPage());
+                    await Get.to(() => const SchedulePreviewPage());
                   },
                   icon: const Icon(Icons.schedule),
                   label: const Text(
