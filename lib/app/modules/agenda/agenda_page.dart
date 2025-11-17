@@ -524,7 +524,7 @@ class AgendaPage extends GetView<AgendaController> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      }),
                     ],
                   );
                 },
