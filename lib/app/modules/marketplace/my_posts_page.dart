@@ -21,6 +21,7 @@ class MyPostsPage extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'my_posts_fab',
         onPressed: () => controller.goToCreatePost(),
         backgroundColor: Colors.orange,
         icon: const Icon(Icons.add),

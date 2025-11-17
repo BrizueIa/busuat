@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:busuat/app/modules/agenda/views/schedule_preview_page.dart';
 import '../home_controller.dart';
 
 class ProfileView extends StatelessWidget {
@@ -51,6 +52,29 @@ class ProfileView extends StatelessWidget {
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
               const SizedBox(height: 24),
+
+              // Botón para Horario
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Get.to(() => const SchedulePreviewPage()),
+                  icon: const Icon(Icons.schedule),
+                  label: const Text(
+                    'Horario',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
 
               // Botón para ver Mis Publicaciones
               SizedBox(

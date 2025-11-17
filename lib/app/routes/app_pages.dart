@@ -14,6 +14,8 @@ import '../modules/home/home_binding.dart';
 import '../modules/home/home_page.dart';
 import '../modules/map/map_binding.dart';
 import '../modules/map/map_page.dart';
+import '../modules/agenda/agenda_binding.dart';
+import '../modules/agenda/agenda_page.dart';
 import '../modules/marketplace/marketplace_binding.dart';
 import '../modules/marketplace/create_post_page.dart';
 import '../modules/marketplace/edit_post_page.dart';
@@ -67,6 +69,11 @@ class AppPages {
       name: Routes.MAP,
       page: () => const MapPage(),
       binding: MapBinding(),
+    ),
+    GetPage(
+      name: Routes.AGENDA,
+      page: () => const AgendaPage(),
+      binding: AgendaBinding(),
     ),
     GetPage(
       name: Routes.CREATE_POST,

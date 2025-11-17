@@ -125,6 +125,7 @@ class MarketplaceView extends StatelessWidget {
       }),
       floatingActionButton: controller.isStudent
           ? FloatingActionButton(
+              heroTag: 'marketplace_fab',
               onPressed: controller.goToCreatePost,
               backgroundColor: Colors.orange,
               child: const Icon(Icons.add, color: Colors.white),
