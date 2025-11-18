@@ -13,12 +13,24 @@ class AgendaController extends GetxController {
   final items = <AgendaItem>[].obs;
   final scheduleItems = <ScheduleItem>[].obs;
   final _scheduleService = ScheduleService();
+  
+  final isLoading = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     loadItems();
     loadSchedule();
+    _migrateLocalData();
+  }
+
+  // Migrar datos locales a Supabase en el primer inicio
+  Future<void> _migrateLocalData() async {
+    try {
+      await _service.migrateLocalDataToSupabase();
+    } catch (e) {
+      print('⚠️ Error al migrar datos locales: $e');
+    }
   }
 
   Future<void> loadSchedule() async {
@@ -68,27 +80,42 @@ class AgendaController extends GetxController {
   }
 
   Future<void> loadItems() async {
-    final loaded = await _service.getItems();
-    items.assignAll(loaded);
+    try {
+      isLoading.value = true;
+      final loaded = await _service.getItems();
+      items.assignAll(loaded);
+    } catch (e) {
+      print('❌ Error al cargar items: $e');
+      // Mostrar mensaje de error al usuario si es necesario
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> addItem(
     String title,
     String description,
     DateTime? when, {
-    String? category,
+    List<String>? category,  // Cambiado a List<String>?
   }) async {
-    final item = AgendaItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      description: description,
-      when: when,
-      done: false,
-      pinned: false,
-      category: category,
-    );
-    await _service.addItem(item);
-    items.insert(0, item);
+    try {
+      isLoading.value = true;
+      final item = AgendaItem(
+        title: title,
+        description: description,
+        when: when,
+        done: false,
+        pinned: false,
+        category: category,
+      );
+      final created = await _service.addItem(item);
+      items.insert(0, created);
+    } catch (e) {
+      print('❌ Error al agregar item: $e');
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   // sortMode: 'recientes' | 'antiguas'
@@ -118,16 +145,34 @@ class AgendaController extends GetxController {
   }
 
   Future<void> removeItem(AgendaItem item) async {
-    await _service.removeItem(item.id);
-    items.removeWhere((i) => i.id == item.id);
+    if (item.id == null) return;
+    
+    try {
+      isLoading.value = true;
+      await _service.removeItem(item.id!);
+      items.removeWhere((i) => i.id == item.id);
+    } catch (e) {
+      print('❌ Error al eliminar item: $e');
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> updateItem(AgendaItem updated) async {
-    await _service.updateItem(updated);
-    final i = items.indexWhere((it) => it.id == updated.id);
-    if (i != -1) {
-      items[i] = updated;
-      items.refresh();
+    try {
+      isLoading.value = true;
+      final result = await _service.updateItem(updated);
+      final i = items.indexWhere((it) => it.id == result.id);
+      if (i != -1) {
+        items[i] = result;
+        items.refresh();
+      }
+    } catch (e) {
+      print('❌ Error al actualizar item: $e');
+      rethrow;
+    } finally {
+      isLoading.value = false;
     }
   }
 }
