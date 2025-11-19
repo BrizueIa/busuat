@@ -1,5 +1,6 @@
 class ScheduleItem {
-  final String id;
+  final int? id; // bigint from database, nullable for new items
+  final String? userId; // Required for database operations
 
   /// Materia / nombre principal
   final String subject;
@@ -20,7 +21,8 @@ class ScheduleItem {
   final String? professor;
 
   ScheduleItem({
-    required this.id,
+    this.id,
+    this.userId,
     required this.subject,
     required this.weekdays,
     required this.start,
@@ -52,7 +54,10 @@ class ScheduleItem {
     // subject prefers explicit 'subject', fallback to legacy 'title'
     final subj = (m['subject'] as String?) ?? (m['title'] as String?);
     return ScheduleItem(
-      id: m['id'] as String,
+      id: m['id'] is int
+          ? m['id']
+          : (m['id'] is String ? int.tryParse(m['id']) : null),
+      userId: m['user_id'] as String?,
       subject: subj ?? '',
       weekdays: wk,
       start: m['start'] as String,
@@ -66,7 +71,22 @@ class ScheduleItem {
   }
 
   Map<String, dynamic> toMap() => {
-    'id': id,
+    if (id != null) 'id': id,
+    if (userId != null) 'user_id': userId,
+    'subject': subject,
+    'weekdays': weekdays,
+    'start': start,
+    'end': end,
+    'location': location,
+    'grade': grade,
+    'group': group,
+    'classroom': classroom,
+    'professor': professor,
+  };
+
+  // For database insert (without id)
+  Map<String, dynamic> toInsertMap() => {
+    'user_id': userId,
     'subject': subject,
     'weekdays': weekdays,
     'start': start,

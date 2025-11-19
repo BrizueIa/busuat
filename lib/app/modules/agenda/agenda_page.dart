@@ -77,11 +77,12 @@ class AgendaPage extends GetView<AgendaController> {
         final view = controller.viewMode.value;
         final focus = controller.focusDate.value;
 
-        // categories available (non-empty)
+        // categories available (flatten and deduplicate)
         final categories = items
-            .map((e) => e.category)
-            .where((c) => c != null && c.trim().isNotEmpty)
-            .map((c) => c!.trim())
+            .where((e) => e.category != null && e.category!.isNotEmpty)
+            .expand((e) => e.category!)
+            .map((c) => c.trim())
+            .where((c) => c.isNotEmpty)
             .toSet()
             .toList();
 
@@ -91,14 +92,14 @@ class AgendaPage extends GetView<AgendaController> {
             .where(
               (i) =>
                   i.when == null &&
-                  (selCat == null || (i.category ?? '') == selCat),
+                  (selCat == null || (i.category?.contains(selCat) ?? false)),
             )
             .toList();
         final dated = items
             .where(
               (i) =>
                   i.when != null &&
-                  (selCat == null || (i.category ?? '') == selCat),
+                  (selCat == null || (i.category?.contains(selCat) ?? false)),
             )
             .toList();
 

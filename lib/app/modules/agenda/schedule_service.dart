@@ -1,40 +1,121 @@
-import 'package:get_storage/get_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models/schedule_item.dart';
 
 class ScheduleService {
-  final _box = GetStorage();
-  final _key = 'agenda_schedule';
+  final _supabase = Supabase.instance.client;
+
+  String? get _currentUserId => _supabase.auth.currentUser?.id;
 
   Future<List<ScheduleItem>> getItems() async {
-    final data = _box.read<List>(_key);
-    if (data == null) return [];
-    return data.map((e) {
-      final m = Map<String, dynamic>.from(e);
-      return ScheduleItem.fromMap(m);
-    }).toList();
-  }
+    try {
+      if (_currentUserId == null) {
+        print('⚠️ No hay usuario autenticado');
+        return [];
+      }
 
-  Future<void> addItem(ScheduleItem item) async {
-    final list = _box.read<List>(_key) ?? [];
-    list.insert(0, item.toMap());
-    await _box.write(_key, list);
-  }
+      final response = await _supabase
+          .from('schedule')
+          .select()
+          .eq('user_id', _currentUserId!)
+          .order('created_at', ascending: false);
 
-  Future<void> removeItem(String id) async {
-    final list = _box.read<List>(_key) ?? [];
-    list.removeWhere((e) => (e as Map)['id'] == id);
-    await _box.write(_key, list);
-  }
-
-  Future<void> updateItem(ScheduleItem item) async {
-    final list = _box.read<List>(_key) ?? [];
-    final idx = list.indexWhere((e) => (e as Map)['id'] == item.id);
-    if (idx != -1) {
-      list[idx] = item.toMap();
-    } else {
-      list.insert(0, item.toMap());
+      return response.map((e) {
+        final m = Map<String, dynamic>.from(e);
+        return ScheduleItem.fromMap(m);
+      }).toList();
+    } catch (e) {
+      print('❌ Error al obtener items del horario: $e');
+      return [];
     }
-    await _box.write(_key, list);
+  }
+
+  Future<ScheduleItem?> addItem(ScheduleItem item) async {
+    try {
+      if (_currentUserId == null) {
+        print('⚠️ No hay usuario autenticado');
+        return null;
+      }
+
+      // Asegurar que el item tiene el user_id correcto
+      final itemWithUser = ScheduleItem(
+        id: item.id,
+        userId: _currentUserId,
+        subject: item.subject,
+        weekdays: item.weekdays,
+        start: item.start,
+        end: item.end,
+        location: item.location,
+        grade: item.grade,
+        group: item.group,
+        classroom: item.classroom,
+        professor: item.professor,
+      );
+
+      final response = await _supabase
+          .from('schedule')
+          .insert(itemWithUser.toInsertMap())
+          .select()
+          .single();
+
+      return ScheduleItem.fromMap(response);
+    } catch (e) {
+      print('❌ Error al agregar item del horario: $e');
+      return null;
+    }
+  }
+
+  Future<void> removeItem(int id) async {
+    try {
+      if (_currentUserId == null) {
+        print('⚠️ No hay usuario autenticado');
+        return;
+      }
+
+      await _supabase
+          .from('schedule')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', _currentUserId!);
+    } catch (e) {
+      print('❌ Error al eliminar item del horario: $e');
+    }
+  }
+
+  Future<ScheduleItem?> updateItem(ScheduleItem item) async {
+    if (item.id == null) {
+      print('❌ Error: item sin id para actualizar');
+      return null;
+    }
+
+    if (_currentUserId == null) {
+      print('⚠️ No hay usuario autenticado');
+      return null;
+    }
+
+    try {
+      final response = await _supabase
+          .from('schedule')
+          .update({
+            'subject': item.subject,
+            'weekdays': item.weekdays,
+            'start': item.start,
+            'end': item.end,
+            'location': item.location,
+            'grade': item.grade,
+            'group': item.group,
+            'classroom': item.classroom,
+            'professor': item.professor,
+          })
+          .eq('id', item.id!)
+          .eq('user_id', _currentUserId!)
+          .select()
+          .single();
+
+      return ScheduleItem.fromMap(response);
+    } catch (e) {
+      print('❌ Error al actualizar item del horario: $e');
+      return null;
+    }
   }
 }
