@@ -43,24 +43,13 @@ class _AgendaCreatePageState extends State<AgendaCreatePage> {
     final title = titleCtrl.text.trim();
     final desc = descCtrl.text.trim();
     if (title.isEmpty) return;
-    
-    // Parsear categorías separadas por comas
-    List<String>? categories;
-    final categoryText = categoryCtrl.text.trim();
-    if (categoryText.isNotEmpty) {
-      categories = categoryText
-          .split(',')
-          .map((c) => c.trim())
-          .where((c) => c.isNotEmpty)
-          .toList();
-      if (categories.isEmpty) categories = null;
-    }
-    
     await controller.addItem(
       title,
       desc,
       hasReminder ? when : null,
-      category: categories,
+      category: categoryCtrl.text.trim().isEmpty
+          ? null
+          : categoryCtrl.text.trim(),
     );
     Navigator.pop(context);
   }
@@ -86,10 +75,7 @@ class _AgendaCreatePageState extends State<AgendaCreatePage> {
               const SizedBox(height: 12),
               TextField(
                 controller: categoryCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Categorías (separadas por coma)',
-                  hintText: 'Ej: Trabajo, Personal, Urgente',
-                ),
+                decoration: const InputDecoration(labelText: 'Categoría'),
               ),
               const SizedBox(height: 12),
               TextField(

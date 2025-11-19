@@ -77,14 +77,13 @@ class AgendaPage extends GetView<AgendaController> {
         final view = controller.viewMode.value;
         final focus = controller.focusDate.value;
 
-        // categories available (flatten from all items)
-        final categoriesSet = <String>{};
-        for (final item in items) {
-          if (item.category != null) {
-            categoriesSet.addAll(item.category!);
-          }
-        }
-        final categories = categoriesSet.toList()..sort();
+        // categories available (non-empty)
+        final categories = items
+            .map((e) => e.category)
+            .where((c) => c != null && c.trim().isNotEmpty)
+            .map((c) => c!.trim())
+            .toSet()
+            .toList();
 
         final selCat = controller.selectedCategory.value;
 
@@ -92,14 +91,14 @@ class AgendaPage extends GetView<AgendaController> {
             .where(
               (i) =>
                   i.when == null &&
-                  (selCat == null || (i.category?.contains(selCat) ?? false)),
+                  (selCat == null || (i.category ?? '') == selCat),
             )
             .toList();
         final dated = items
             .where(
               (i) =>
                   i.when != null &&
-                  (selCat == null || (i.category?.contains(selCat) ?? false)),
+                  (selCat == null || (i.category ?? '') == selCat),
             )
             .toList();
 

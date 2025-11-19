@@ -37,9 +37,7 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
     // inicializar con los valores del item actual
     titleCtrl = TextEditingController(text: widget.item.title);
     descCtrl = TextEditingController(text: widget.item.description);
-    // Convertir lista de categorías a string separado por comas
-    final categoryText = widget.item.category?.join(', ') ?? '';
-    categoryCtrl = TextEditingController(text: categoryText);
+    categoryCtrl = TextEditingController(text: widget.item.category ?? '');
     when = widget.item.when;
     hasReminder = when != null;
     // Si la página se abrió en readOnly, empezar en modo lectura;
@@ -56,7 +54,7 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
       );
       titleCtrl.text = current.title;
       descCtrl.text = current.description;
-      categoryCtrl.text = current.category?.join(', ') ?? '';
+      categoryCtrl.text = current.category ?? '';
       when = current.when;
       hasReminder = when != null;
       isEditing = true;
@@ -71,24 +69,12 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
       (e) => e.id == widget.item.id,
       orElse: () => widget.item,
     );
-    // Parsear categorías separadas por comas
-    List<String>? categories;
-    final categoryText = categoryCtrl.text.trim();
-    if (categoryText.isNotEmpty) {
-      categories = categoryText
-          .split(',')
-          .map((c) => c.trim())
-          .where((c) => c.isNotEmpty)
-          .toList();
-      if (categories.isEmpty) categories = null;
-    }
-    
     final updated = current.copyWith(
       title: title,
       description: desc,
       when: when,
       whenIsProvided: true,
-      category: categories,
+      category: categoryCtrl.text.trim(),
       categoryIsProvided: true,
     );
     await controller.updateItem(updated);
@@ -179,26 +165,21 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
               ),
             ),
             const SizedBox(height: 6),
-            if (current.category != null && current.category!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: current.category!.map((cat) {
-                    return InkWell(
-                      onTap: _enterEdit,
-                      child: Chip(
-                        label: Text(cat),
-                        backgroundColor: Colors.orange.shade50,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Colors.orange.shade200),
-                        ),
+            if ((current.category ?? '').isNotEmpty)
+              Row(
+                children: [
+                  InkWell(
+                    onTap: _enterEdit,
+                    child: Chip(
+                      label: Text(current.category!),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: Colors.grey.shade300),
                       ),
-                    );
-                  }).toList(),
-                ),
+                    ),
+                  ),
+                ],
               ),
             const SizedBox(height: 12),
             if (current.description.isNotEmpty)
@@ -304,10 +285,7 @@ class _AgendaDetailPageState extends State<AgendaDetailPage> {
           const SizedBox(height: 8),
           TextField(
             controller: categoryCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Categorías (separadas por coma)',
-              hintText: 'Ej: Trabajo, Personal, Urgente',
-            ),
+            decoration: const InputDecoration(labelText: 'Categoría'),
           ),
           const SizedBox(height: 8),
           TextField(
