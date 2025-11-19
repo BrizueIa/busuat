@@ -38,7 +38,6 @@ class AgendaController extends GetxController {
     String? professor,
   }) async {
     final item = ScheduleItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
       subject: subject,
       weekdays: weekdays,
       start: start,
@@ -49,21 +48,26 @@ class AgendaController extends GetxController {
       classroom: classroom,
       professor: professor,
     );
-    await _scheduleService.addItem(item);
-    scheduleItems.insert(0, item);
+    final added = await _scheduleService.addItem(item);
+    if (added != null) {
+      scheduleItems.insert(0, added);
+    }
   }
 
   Future<void> updateScheduleItem(ScheduleItem updated) async {
-    await _scheduleService.updateItem(updated);
-    final i = scheduleItems.indexWhere((s) => s.id == updated.id);
-    if (i != -1) {
-      scheduleItems[i] = updated;
-      scheduleItems.refresh();
+    final result = await _scheduleService.updateItem(updated);
+    if (result != null) {
+      final i = scheduleItems.indexWhere((s) => s.id == result.id);
+      if (i != -1) {
+        scheduleItems[i] = result;
+        scheduleItems.refresh();
+      }
     }
   }
 
   Future<void> removeScheduleItem(ScheduleItem item) async {
-    await _scheduleService.removeItem(item.id);
+    if (item.id == null) return;
+    await _scheduleService.removeItem(item.id!);
     scheduleItems.removeWhere((s) => s.id == item.id);
   }
 
@@ -76,10 +80,9 @@ class AgendaController extends GetxController {
     String title,
     String description,
     DateTime? when, {
-    String? category,
+    List<String>? category,
   }) async {
     final item = AgendaItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
       description: description,
       when: when,
@@ -87,8 +90,10 @@ class AgendaController extends GetxController {
       pinned: false,
       category: category,
     );
-    await _service.addItem(item);
-    items.insert(0, item);
+    final added = await _service.addItem(item);
+    if (added != null) {
+      items.insert(0, added);
+    }
   }
 
   // sortMode: 'recientes' | 'antiguas'
@@ -118,16 +123,19 @@ class AgendaController extends GetxController {
   }
 
   Future<void> removeItem(AgendaItem item) async {
-    await _service.removeItem(item.id);
+    if (item.id == null) return;
+    await _service.removeItem(item.id!);
     items.removeWhere((i) => i.id == item.id);
   }
 
   Future<void> updateItem(AgendaItem updated) async {
-    await _service.updateItem(updated);
-    final i = items.indexWhere((it) => it.id == updated.id);
-    if (i != -1) {
-      items[i] = updated;
-      items.refresh();
+    final result = await _service.updateItem(updated);
+    if (result != null) {
+      final i = items.indexWhere((it) => it.id == result.id);
+      if (i != -1) {
+        items[i] = result;
+        items.refresh();
+      }
     }
   }
 }
